@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Aventura na Matriz Mágica!</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Open+Sans&display=swap" rel="stylesheet">
+    <style>
+        /* --- 1. Estilos Globais e Fundo (Alto Contraste) --- */
+        body {
+            font-family: 'Open Sans', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(to bottom right, #1A535C, #4ECDC4);
+            color: #000;
+        }
+
+        h1 {
+            font-family: 'Fredoka One', cursive;
+            color: #FF6B6B;
+            text-shadow: 2px 2px 0 #FFF;
+            margin-bottom: 6px;
+            text-align: center;
+        }
+
+        /* --- Estilo do Placar --- */
+        #score {
+            font-family: 'Fredoka One', cursive;
+            color: #FFC300; /* Cor de ouro */
+            text-shadow: 1px 1px 0 #333;
+            margin-top: -10px;
+            margin-bottom: 10px;
+            font-size: 1.5em;
+            text-align: center;
+        }
+
+        #timer {
+            display: none;
+            color: #FFEB3B;
+            text-shadow:1px 1px 2px #000;
+            font-weight: bold;
+            margin-bottom: 12px;
+            text-align: center;
+            font-size: 1.2em;
+        }
+
+        .game-container {
+            background-color: #F7FFF7;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 95%;
+            width: 900px;
+            box-sizing: border-box;
+        }
+
+        /* --- 2. Estilos do Tabuleiro (Visual) --- */
+        #game-grid {
+            display: grid;
+            grid-template-columns: 0.1fr repeat(5, 1fr);
+            grid-template-rows: 0.1fr repeat(3, 1fr);
+            gap: 5px;
+            border: 5px solid #073B4C;
+            border-radius: 10px;
+            padding: 5px;
+            background-color: #A2A9B8;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 550px;
+            box-sizing: border-box;
+        }
+
+        /* Rótulos externos (A, B, C, 1, 2, 3) */
+        .label-cell {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: #073B4C;
+            font-size: 1.1em;
+            background: none;
+        }
+        .empty-corner { grid-row: 1; grid-column: 1; }
+
+        /* Células da Matriz (APENAS VISUALIZAÇÃO) */
+        .cell-visual {
+            background-color: #BEE3DB;
+            border: 2px solid #073B4C;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            position: relative;
+            height: 100%;
+            min-height: 50px;
+            cursor: default;
+        }
+
+        /* Cor de destaque da célula (quando o botão correspondente é clicado) */
+        .cell-visual.highlighted {
+            background-color: #33A1F4 !important;
+            border-color: #073B4C !important;
+            color: white;
+            box-shadow: 0 0 10px #33A1F4;
+        }
+
+        /* Estilo para as pegadas no caminho */
+        .cell-visual.visited {
+            background-color: #DDEEEF;
+            font-size: 1.5em;
+        }
+
+        /* Cores de Alto Contraste para Elementos (Tabuleiro) */
+        .cell-visual.player {
+            background-color: #FFD166;
+            border-color: #F89B2B;
+            color: #333;
+            font-size: 1.5em;
+        }
+        .cell-visual.start.bomb { background-color: #EF476F; border-color: #B02E4E; color: white; }
+        .cell-visual.coin { background-color: #FFC300; border-color: #DAA520; animation: pulse 1s infinite alternate; font-size: 2em; }
+        .cell-visual.exit { background-color: #06D6A0; border-color: #049A6E; color: white; }
+        .cell-visual.monster-lair { background-color: #118AB2; border-color: #073B4C; color: white; flex-direction: column; font-size: 0.9em; }
+        .cell-visual.blocked { background-color: #C1121F; border-color: #8D0801; opacity: 0.9; color: white; }
+
+        /* Ícones dos monstros */
+        .olhao-icon, .orelhao-icon { font-size: 2.0em; line-height: 1; }
+        .olhao-dormindo { opacity: 0.8; transform: scale(0.9); filter: blur(0.5px); }
+        .orelhao-atento { animation: moveEars 0.5s infinite alternate; }
+        @keyframes moveEars { 0% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-3px) rotate(5deg); } 100% { transform: translateY(0) rotate(-5deg); } }
+
+        /* --- 3. Botões de Ação Externos (Centralizado) --- */
+        #action-buttons-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        #action-buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px 5px;
+            width: 100%;
+            max-width: 550px;
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #FFFACD;
+            border-radius: 8px;
+            border: 2px solid #FFC300;
+        }
+
+        .cell-action-button {
+            padding: 8px 5px;
+            background-color: #118AB2;
+            color: white;
+            border: 2px solid #073B4C;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.1s, transform 0.1s;
+        }
+
+        .cell-action-button:hover { background-color: #073B4C; }
+
+        .cell-action-button:active { transform: scale(0.95); }
+
+        /* Estilo para o botão selecionado/highlighted */
+        .cell-action-button.highlighted {
+            background-color: #33A1F4;
+            border-color: #073B4C;
+            box-shadow: 0 0 8px #33A1F4;
+        }
+
+        .cell-action-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #4ECDC4;
+        }
+
+        /* --- 4. Estilos da Interface (Mensagens e Status) --- */
+        #message-area { margin-bottom: 20px; text-align: center; width: 100%; }
+        #game-message { font-size: 1.4em; color: #073B4C; font-weight: bold; margin-bottom: 15px; }
+
+        #question-box {
+            background-color: #FFFACD;
+            border: 2px solid #FFC300;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center; /* Centraliza o conteúdo da caixa */
+            align-items: center;
+            flex-wrap: wrap; /* Permite quebrar linha em telas menores */
+        }
+        #math-question {
+            font-size: 1.6em;
+            margin-right: 15px;
+            color: #118AB2;
+            white-space: nowrap; /* Mantém a pergunta na mesma linha */
+        }
+
+        input[type="number"] {
+            padding: 12px;
+            border: 1px solid #CCC;
+            border-radius: 5px;
+            font-size: 1.2em;
+            width: 100px; /* Tamanho fixo para input */
+            margin-right: 15px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        button.action-btn {
+            background-color: #06D6A0;
+            color: #073B4C;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: bold;
+            transition: background-color 0.2s ease;
+            width: auto;
+            margin-bottom: 10px;
+        }
+
+        button.action-btn:hover { background-color: #049A6E; color: white; }
+        
+        /* Esta é a classe que esconde os elementos */
+        .hidden { 
+            display: none !important; 
+        }
+
+        @media (min-width: 768px) {
+            input[type="number"] {
+                margin-bottom: 0;
+            }
+            button.action-btn {
+                margin-bottom: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Aventura na Matriz! 🧭</h1>
+        <h2 id="score">💰 Pontos: 0</h2>
+        <h2 id="timer">⏳ Tempo restante: 60s</h2>
+
+        <div id="game-grid">
+            <div class="label-cell empty-corner"></div>
+            <div class="label-cell" style="grid-column: 2;">A</div>
+            <div class="label-cell" style="grid-column: 3;">B</div>
+            <div class="label-cell" style="grid-column: 4;">C</div>
+            <div class="label-cell" style="grid-column: 5;">D</div>
+            <div class="label-cell" style="grid-column: 6;">E</div>
+            <div class="label-cell" style="grid-row: 2;">1</div>
+            <div class="label-cell" style="grid-row: 3;">2</div>
+            <div class="label-cell" style="grid-row: 4;">3</div>
+        </div>
+
+        <div id="message-area">
+            <p id="game-message">Bem-vindo(a)! Resolva antes que a bomba estoure!</p>
+
+            <div id="question-box">
+                <p id="math-question"></p>
+                <input type="number" id="answer-input" placeholder="Sua resposta" onkeypress="if(event.keyCode == 13) checkAnswer()">
+                <button class="action-btn" onclick="checkAnswer()">Responder</button>
+            </div>
+
+            <div id="action-buttons-wrapper">
+                <div id="action-buttons-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            /* --- Elementos DOM --- */
+            const gameGrid = document.getElementById('game-grid');
+            const actionButtonsGrid = document.getElementById('action-buttons-grid');
+            const gameMessage = document.getElementById('game-message');
+            const questionBox = document.getElementById('question-box');
+            const mathQuestion = document.getElementById('math-question');
+            const answerInput = document.getElementById('answer-input');
+            const timerDisplay = document.getElementById('timer');
+            const scoreDisplay = document.getElementById('score'); // Elemento do placar
+
+            /* --- Constantes do tabuleiro --- */
+            const COLS = ['A','B','C','D','E'];
+            const ROWS = [1,2,3];
+            const NUM_COLS = COLS.length;
+            const NUM_ROWS = ROWS.length;
+
+            /* --- Estado do Jogo --- */
+            let playerPosition = { row: 0, col: 0 }; // A1
+            let coinPosition = {};
+            const exitPosition = { row: NUM_ROWS - 1, col: NUM_COLS - 1 }; // E3
+
+            const monsterLairPosition = { row: 1, col: 2 }; // C2
+            const olhaoBlockedCellId = 'C1';
+            const orelhaoBlockedCellId = 'C3';
+            const extraBlockedCells = ['B2','D2'];
+
+            let olhaoActive = true;
+            let orelhaoActive = false;
+            let extraTrapsActive = false;
+            let hasCoin = false;
+            let isQuestionPending = true;
+            let currentHighlightId = null;
+            let pathMatrix = [];
+            let isBombActive = true;
+            let totalScore = 0; // Variável de pontuação
+
+            /* --- Timer / GameOver --- */
+            let countdown = 60;
+            let timerInterval = null;
+            let timerActive = false;
+            let isGameOver = false;
+
+            /* --- Timer da Pergunta --- */
+            let questionCountdown = 60;
+            let questionTimerInterval = null;
+
+
+            /* --- Funções utilitárias --- */
+            function coordsToId(row, col) {
+                return `${COLS[col]}${ROWS[row]}`;
+            }
+
+            function idToCoords(id) {
+                if (!id || typeof id !== 'string') return { row: undefined, col: undefined };
+                const col = COLS.indexOf(id[0].toUpperCase());
+                const rowNum = parseInt(id.slice(1), 10);
+                if (isNaN(rowNum) || col < 0) return { row: undefined, col: undefined };
+                return { row: rowNum - 1, col };
+            }
+
+            function generateRandomMathQuestion() {
+                const num1 = Math.floor(Math.random() * 9) + 1;
+                const num2 = Math.floor(Math.random() * 9) + 1;
+                let question, answer;
+                if (Math.random() < 0.5) {
+                    question = `${num1} + ${num2} = ?`;
+                    answer = num1 + num2;
+                } else {
+                    const [n1, n2] = num1 >= num2 ? [num1, num2] : [num2, num1];
+                    question = `${n1} - ${n2} = ?`;
+                    answer = n1 - n2;
+                }
+                return { question, answer };
+            }
+
+            function setHighlight(newId) {
+                if (currentHighlightId) {
+                    const prevCell = document.getElementById(currentHighlightId);
+                    const prevBtn = document.querySelector(`.cell-action-button[data-cell="${currentHighlightId}"]`);
+                    if (prevCell) prevCell.classList.remove('highlighted');
+                    if (prevBtn) prevBtn.classList.remove('highlighted');
+                }
+                currentHighlightId = newId;
+                if (newId) {
+                    const newCell = document.getElementById(newId);
+                    const newBtn = document.querySelector(`.cell-action-button[data-cell="${newId}"]`);
+                    if (newCell) newCell.classList.add('highlighted');
+                    if (newBtn) newBtn.classList.add('highlighted');
+                }
+            }
+
+            /* --- Timer da Pergunta (1 min) --- */
+            function startQuestionTimer() {
+                stopTimer(); // Para o timer principal (caso esteja ativo)
+                if (questionTimerInterval) clearInterval(questionTimerInterval); // Para si mesmo
+
+                questionCountdown = 60;
+                timerDisplay.style.display = 'block';
+                timerDisplay.textContent = `⏳ Tempo para responder: ${questionCountdown}s`;
+
+                questionTimerInterval = setInterval(() => {
+                    questionCountdown--;
+                    timerDisplay.textContent = `⏳ Tempo para responder: ${questionCountdown}s`;
+
+                    if (questionCountdown <= 0) {
+                        clearInterval(questionTimerInterval);
+                        questionTimerInterval = null;
+                        
+                        // Tempo acabou! Força a explosão da bomba
+                        questionBox.classList.add('hidden'); // Esconde a caixa
+                        triggerBombExplosion("⏰ O tempo para responder acabou! A bomba explodiu! O Olhudo dormiu mas Orelhudo acordou! Corra até a saída!");
+                    }
+                }, 1000);
+            }
+
+            function stopQuestionTimer() {
+                if (questionTimerInterval) {
+                    clearInterval(questionTimerInterval);
+                    questionTimerInterval = null;
+                }
+            }
+
+
+            /* --- Timer Principal (Fuga) --- */
+            function startTimer() {
+                // exibe e inicializa
+                timerDisplay.style.display = 'block';
+                countdown = 70;
+                timerActive = true;
+                isGameOver = false;
+                timerDisplay.textContent = `⏳ Tempo de fuga: ${countdown}s`;
+
+                // Garante que se existia um intervalo anterior, limpe
+                if (timerInterval) clearInterval(timerInterval);
+
+                timerInterval = setInterval(() => {
+                    countdown--;
+                    timerDisplay.textContent = `⏳ Tempo de fuga: ${countdown}s`;
+
+                    if (countdown <= 0) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        timerActive = false;
+                        // trava tudo
+                        lockAllCells();
+                        gameMessage.textContent = "💥 O tempo acabou! Os monstros venceram!";
+                        alert("GAME OVER — O tempo acabou!");
+                    }
+                }, 1000);
+            }
+
+            function stopTimer() {
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+                timerActive = false;
+                timerDisplay.style.display = 'none';
+            }
+
+            /* --- Bloqueia todas as casas (derrota por tempo) --- */
+            function lockAllCells() {
+                isGameOver = true;
+                // desabilita botões
+                const buttons = document.querySelectorAll('.cell-action-button');
+                buttons.forEach(btn => btn.disabled = true);
+                // pinta todas as células como bloqueadas
+                const cells = document.querySelectorAll('.cell-visual');
+                cells.forEach(c => {
+                    c.classList.add('blocked');
+                    c.innerHTML = '⛔';
+                });
+            }
+
+            /* --- Criação do Tabuleiro Visual --- */
+            function createBoard() {
+                const existingCells = gameGrid.querySelectorAll('.cell-visual');
+                existingCells.forEach(cell => cell.remove());
+
+                for (let r = 0; r < NUM_ROWS; r++) {
+                    for (let c = 0; c < NUM_COLS; c++) {
+                        const cell = document.createElement('div');
+                        cell.classList.add('cell-visual');
+                        const cellId = coordsToId(r, c);
+                        cell.id = cellId;
+
+                        cell.style.gridRow = r + 2;
+                        cell.style.gridColumn = c + 2;
+
+                        // Pegadas
+                        if (pathMatrix[r] && pathMatrix[r][c]) {
+                            cell.classList.add('visited');
+                            cell.innerHTML = '👣';
+                        }
+
+                        // Elementos fixos
+                        if (r === exitPosition.row && c === exitPosition.col) {
+                            if (cell.innerHTML === '') cell.innerHTML = '🚪';
+                            cell.classList.add('exit');
+                        } else if (r === monsterLairPosition.row && c === monsterLairPosition.col) {
+                            cell.classList.add('monster-lair');
+                            let olhaoIcon = olhaoActive ? '👁️' : '😴';
+                            let olhaoClass = olhaoActive ? '' : 'olhao-dormindo';
+                            let orelhaoIcon = orelhaoActive || extraTrapsActive ? '👂' : '😴';
+                            let orelhaoClass = orelhaoActive || extraTrapsActive ? 'orelhao-atento' : 'olhao-dormindo';
+
+                            let olhaoHtml = `<span class="olhao-icon ${olhaoClass}">${olhaoIcon}</span>`;
+                            let orelhaoHtml = `<span class="orelhao-icon ${orelhaoClass}">${orelhaoIcon}</span>`;
+                            cell.innerHTML = `${olhaoHtml} ${orelhaoHtml}`;
+                        }
+
+                        // Moeda (aparece apenas se coinPosition válida e não coletada)
+                        if (coinPosition && coinPosition.row >= 0 && r === coinPosition.row && c === coinPosition.col && !hasCoin) {
+                            cell.classList.remove('visited');
+                            cell.classList.add('coin');
+                            cell.innerHTML = '💰';
+                        }
+
+                        // Bomba (A1)
+                        if (r === 0 && c === 0) {
+                            if (isBombActive) {
+                                cell.classList.add('bomb', 'start');
+                                cell.innerHTML = '<span class="monster-icon">💣</span>';
+                            }
+                        }
+
+                        // Jogador
+                        if (r === playerPosition.row && c === playerPosition.col) {
+                            cell.classList.remove('visited');
+                            cell.classList.add('player', 'start');
+                            if (cell.innerHTML === '') cell.innerHTML = '👣';
+                        }
+
+                        // Aplica bloqueios
+                        let isBlocked = false;
+                        if (olhaoActive && cellId === olhaoBlockedCellId) isBlocked = true;
+                        if (orelhaoActive && cellId === orelhaoBlockedCellId) isBlocked = true;
+                        if (extraTrapsActive && extraBlockedCells.includes(cellId)) isBlocked = true;
+
+                        if (isBlocked) {
+                            cell.classList.add('blocked');
+                            cell.innerHTML = '⛔';
+                        }
+
+                        // Se o jogo acabou, preferir indicar bloqueio visual
+                        if (isGameOver) {
+                            cell.classList.add('blocked');
+                            cell.innerHTML = '⛔';
+                        }
+
+                        gameGrid.appendChild(cell);
+                    }
+                }
+            }
+
+            // ======================================================
+            // *** INÍCIO DA CORREÇÃO DE EMBARALHAR BOTÕES ***
+            // ======================================================
+
+            /* --- Criação dos Botões de Ação --- */
+            function createActionButtons() {
+                actionButtonsGrid.innerHTML = '';
+                const buttonsArray = []; // 1. Criar array temporário
+
+                for (let r = 0; r < NUM_ROWS; r++) {
+                    for (let c = 0; c < NUM_COLS; c++) {
+                        const cellId = coordsToId(r, c);
+                        const button = document.createElement('button');
+                        button.classList.add('cell-action-button');
+                        button.setAttribute('data-cell', cellId);
+                        button.textContent = cellId;
+                        button.onclick = () => selectDestination(cellId);
+
+                        // A1 e C2 sempre desativados como botões (A1 é interação via pergunta)
+                        if (cellId === 'A1' || cellId === 'C2') {
+                            button.disabled = true;
+                        }
+
+                        // Se jogo acabou, desabilitar tudo
+                        if (isGameOver) button.disabled = true;
+
+                        buttonsArray.push(button); // 2. Adicionar botão ao array
+                    }
+                }
+
+                // 3. Embaralhar o array (Algoritmo Fisher-Yates)
+                for (let i = buttonsArray.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [buttonsArray[i], buttonsArray[j]] = [buttonsArray[j], buttonsArray[i]];
+                }
+
+                // 4. Adicionar os botões embaralhados ao grid
+                buttonsArray.forEach(button => actionButtonsGrid.appendChild(button));
+
+
+                // Esta é a linha que controla a exibição do grid de botões
+                const buttonsGridWrapper = document.getElementById('action-buttons-wrapper');
+                buttonsGridWrapper.style.display = isQuestionPending ? 'none' : 'flex';
+            }
+
+            // ======================================================
+            // *** FIM DA CORREÇÃO DE EMBARALHAR BOTÕES ***
+            // ======================================================
+
+            /* --- Seleção de Destino via Botões --- */
+            window.selectDestination = function(targetId) {
+                if (isGameOver) {
+                    gameMessage.textContent = '⛔ O jogo terminou. Reinicie para jogar novamente.';
+                    setHighlight(null);
+                    return;
+                }
+
+                if (isQuestionPending) {
+                    gameMessage.textContent = 'Atenção! Você precisa desarmar a bomba (A1) primeiro!';
+                    setHighlight(null);
+                    return;
+                }
+
+                const targetPos = idToCoords(targetId);
+                const { row: targetRow, col: targetCol } = targetPos;
+                const { row: playerRow, col: playerCol } = playerPosition;
+
+                if (targetRow === undefined || targetCol === undefined) {
+                    gameMessage.textContent = 'Coordenada inválida.';
+                    return;
+                }
+
+                const distRow = Math.abs(targetRow - playerRow);
+                const distCol = Math.abs(targetCol - playerCol);
+                const isAdjacent = (distRow === 1 && distCol === 0) || (distRow === 0 && distCol === 1);
+
+                const isBlockedByOlhao = olhaoActive && targetId === olhaoBlockedCellId;
+                const isBlockedByOrelhao = orelhaoActive && targetId === orelhaoBlockedCellId;
+                const isBlockedByExtraTrap = extraTrapsActive && extraBlockedCells.includes(targetId);
+
+                if (!isAdjacent) {
+                    gameMessage.textContent = `Movimento inválido! Você só pode selecionar casas vizinhas à ${coordsToId(playerRow, playerCol)}.`;
+                    setHighlight(null);
+                    return;
+                }
+
+                if (isBlockedByOlhao || isBlockedByOrelhao || isBlockedByExtraTrap) {
+                    gameMessage.textContent = `⛔ A casa ${targetId} está bloqueada! Tente outra vizinha.`;
+                    setHighlight(null);
+                    return;
+                }
+
+                // Movimento válido: registra a posição anterior como parte do caminho
+                if (!pathMatrix[playerRow]) pathMatrix[playerRow] = [];
+                pathMatrix[playerRow][playerCol] = true;
+
+                // Move o jogador
+                playerPosition = targetPos;
+                gameMessage.textContent = `➡️ Você se moveu para ${targetId}.`;
+
+                // Verifica moeda
+                if (coinPosition && coinPosition.row >= 0 && playerPosition.row === coinPosition.row && playerPosition.col === coinPosition.col && !hasCoin) {
+                    hasCoin = true;
+                    gameMessage.textContent += ' 💰 Você pegou a moeda! Agora encontre a saída!';
+                }
+                
+                // Verificar vitória
+                if (playerPosition.row === exitPosition.row && playerPosition.col === exitPosition.col) {
+                    
+                    // CENÁRIO 1: MODO FUGA (Errou a bomba, timer está ativo)
+                    if (timerActive) {
+                        gameMessage.textContent = '🎉 Ufa! Você escapou da matriz a tempo e VENCEU O JOGO!';
+                        totalScore += 50; 
+                        scoreDisplay.textContent = `💰 Pontos: ${totalScore}`; 
+                        stopTimer();
+                        setTimeout(() => alert('Parabéns! Você VENCEU! (+50 pontos)'), 150); 
+                        setTimeout(() => initializeGame(), 300);
+                        return;
+                    
+                    // CENÁRIO 2: MODO TESOURO (Acertou a bomba, timer desligado)
+                    } else {
+                        if (hasCoin) {
+                            gameMessage.textContent = '🎉 Parabéns! Você alcançou a saída com a moeda e VENCEU O JOGO!';
+                            totalScore += 100; 
+                            scoreDisplay.textContent = `💰 Pontos: ${totalScore}`; 
+                            setTimeout(() => alert('Parabéns! Você VENCEU! (+100 pontos)'), 150);
+                            setTimeout(() => initializeGame(), 300);
+                            return;
+                        } else {
+                            gameMessage.textContent = '🚪 Você chegou à saída, mas ainda não pegou a moeda! Volte e pegue-a!';
+                        }
+                    }
+                }
+
+                setHighlight(targetId);
+                createBoard();
+                createActionButtons();
+            };
+
+            /* --- Inicialização do Jogo --- */
+            function initializeGame() {
+                // limpa estado de tempo se houver
+                stopTimer();
+                stopQuestionTimer(); // Para o timer da pergunta
+                isGameOver = false;
+
+                // Atualiza o placar no início de cada rodada
+                scoreDisplay.textContent = `💰 Pontos: ${totalScore}`;
+
+                pathMatrix = Array(NUM_ROWS).fill(0).map(() => Array(NUM_COLS).fill(false));
+
+                // Define todas as células "ocupadas" que a moeda deve evitar
+                const startPos = { row: 0, col: 0 }; // A1
+                const lairPos = monsterLairPosition; // C2
+                const exitPos = exitPosition; // E3
+                const olhaoPos = idToCoords(olhaoBlockedCellId); // C1
+                const orelhaoPos = idToCoords(orelhaoBlockedCellId); // C3
+                const extraTrap1Pos = idToCoords(extraBlockedCells[0]); // B2
+                const extraTrap2Pos = idToCoords(extraBlockedCells[1]); // D2
+
+                // define posição aleatória da moeda
+                let validCoinPos = false;
+                while (!validCoinPos) {
+                    const r = Math.floor(Math.random() * NUM_ROWS);
+                    const c = Math.floor(Math.random() * NUM_COLS);
+
+                    // Verifica se (r, c) é IGUAL a alguma das posições proibidas
+                    const isStart = (r === startPos.row && c === startPos.col);
+                    const isLair = (r === lairPos.row && c === lairPos.col);
+                    const isExit = (r === exitPos.row && c === exitPos.col);
+                    const isOlhao = (r === olhaoPos.row && c === olhaoPos.col);
+                    const isOrelhao = (r === orelhaoPos.row && c === orelhaoPos.col);
+                    const isTrap1 = (r === extraTrap1Pos.row && c === extraTrap1Pos.col);
+                    const isTrap2 = (r === extraTrap2Pos.row && c === extraTrap2Pos.col);
+
+                    // Se NÃO FOR nenhuma das posições, a posição é válida
+                    if (!isStart && !isLair && !isExit && !isOlhao && !isOrelhao && !isTrap1 && !isTrap2) {
+                        coinPosition = { row: r, col: c };
+                        validCoinPos = true;
+                    }
+                }
+                
+                playerPosition = { row: 0, col: 0 };
+                hasCoin = false;
+                olhaoActive = true;
+                orelhaoActive = false;
+                extraTrapsActive = false;
+                isQuestionPending = true;
+                isBombActive = true;
+                currentHighlightId = null;
+
+                gameMessage.textContent = 'Bem-vindo(a)! Resolva antes que a bomba estoure!';
+                window.mathQ = generateRandomMathQuestion();
+                mathQuestion.textContent = window.mathQ.question;
+
+                // Garante que a caixa de perguntas apareça
+                questionBox.classList.remove('hidden');
+                
+                answerInput.value = '';
+                answerInput.focus();
+
+                createBoard();
+                createActionButtons();
+
+                // Inicia o timer da pergunta
+                startQuestionTimer();
+            }
+
+            /* --- Lógica de Explosão (Refatorada) --- */
+            function triggerBombExplosion(message) {
+                gameMessage.textContent = message;
+                olhaoActive = false;
+                orelhaoActive = true;
+                extraTrapsActive = true;
+
+                // moeda desaparece
+                coinPosition = { row: -1, col: -1 };
+
+                // inicia cronômetro de FUGA (1 minuto)
+                startTimer();
+
+                isQuestionPending = false;
+                isBombActive = false; // bomba some (ícone A1 removido)
+
+                // marca A1 como visitada
+                if (!pathMatrix[playerPosition.row]) pathMatrix[playerPosition.row] = [];
+                pathMatrix[playerPosition.row][playerPosition.col] = true;
+                setHighlight('A1');
+
+                createBoard();
+                createActionButtons();
+            }
+
+
+            /* --- Resposta da Bomba --- */
+            window.checkAnswer = function() {
+                if (!isQuestionPending || !(playerPosition.row === 0 && playerPosition.col === 0)) return;
+                
+                stopQuestionTimer(); // Para o timer da pergunta
+
+                const userAnswer = parseInt(answerInput.value, 10);
+                const correctAnswer = window.mathQ.answer;
+
+                // limpa campo
+                answerInput.value = '';
+                
+                // OCULTA A CAIXA DE PERGUNTA APÓS RESPONDER
+                questionBox.classList.add('hidden');
+
+                if (userAnswer === correctAnswer) {
+                    // ACERTOU: bomba desarmada
+                    gameMessage.textContent = '✅ Resposta correta! A bomba foi desarmada. O Olhão te observa (C1 bloqueada). Escolha seu caminho.';
+                    olhaoActive = true;
+                    orelhaoActive = false;
+                    extraTrapsActive = false;
+
+                    timerDisplay.style.display = 'none'; // Esconde o timer
+
+                    isQuestionPending = false;
+                    isBombActive = false; // bomba some (ícone A1 removido)
+
+                    // marca A1 como visitada
+                    if (!pathMatrix[playerPosition.row]) pathMatrix[playerPosition.row] = [];
+                    pathMatrix[playerPosition.row][playerPosition.col] = true;
+                    setHighlight('A1');
+
+                    createBoard();
+                    createActionButtons();
+                } else {
+                    // ERROU: Chama a lógica de explosão
+                    triggerBombExplosion('❌ Resposta incorreta! A bomba explodiu! O Olhão dormiu (C1 livre), o Orelhão acordou (C3) e armadilhas extras ativadas (B2, D2). Corra até a saída!');
+                }
+            };
+
+            // inicia
+            initializeGame();
+        });
+    </script>
+</body>
+</html>
