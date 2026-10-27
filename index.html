@@ -1,824 +1,955 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Aventura na Matriz Mágica!</title>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Open+Sans&display=swap" rel="stylesheet">
-    <style>
-        /* --- 1. Estilos Globais e Fundo (Alto Contraste) --- */
-        body {
-            font-family: 'Open Sans', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background: linear-gradient(to bottom right, #1A535C, #4ECDC4);
-            color: #000;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Busão dos Bichos - Terceiro Excluído</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { font-family: 'Fredoka', cursive, system-ui, sans-serif; user-select: none; -webkit-user-select: none; }
 
-        h1 {
-            font-family: 'Fredoka One', cursive;
-            color: #FF6B6B;
-            text-shadow: 2px 2px 0 #FFF;
-            margin-bottom: 6px;
-            text-align: center;
-        }
+  @keyframes busDrivingBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+  .bus-driving { animation: busDrivingBounce 0.25s infinite ease-in-out; }
 
-        /* --- Estilo do Placar --- */
-        #score {
-            font-family: 'Fredoka One', cursive;
-            color: #FFC300; /* Cor de ouro */
-            text-shadow: 1px 1px 0 #333;
-            margin-top: -10px;
-            margin-bottom: 10px;
-            font-size: 1.5em;
-            text-align: center;
-        }
+  @keyframes spinWheel { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .spinning-wheel { animation: spinWheel 0.4s linear infinite; }
 
-        #timer {
-            display: none;
-            color: #FFEB3B;
-            text-shadow:1px 1px 2px #000;
-            font-weight: bold;
-            margin-bottom: 12px;
-            text-align: center;
-            font-size: 1.2em;
-        }
+  @keyframes animalWalk {
+    0% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-4px) rotate(-6deg); }
+    50% { transform: translateY(0) rotate(0deg); }
+    75% { transform: translateY(-4px) rotate(6deg); }
+    100% { transform: translateY(0) rotate(0deg); }
+  }
+  .walking-actor { animation: animalWalk 0.35s infinite linear; }
 
-        .game-container {
-            background-color: #F7FFF7;
-            border-radius: 15px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
-            padding: 30px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            max-width: 95%;
-            width: 900px;
-            box-sizing: border-box;
-        }
+  @keyframes waveHand {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.15) rotate(12deg); }
+  }
+  .waving { animation: waveHand 0.6s infinite ease-in-out; }
 
-        /* --- 2. Estilos do Tabuleiro (Visual) --- */
-        #game-grid {
-            display: grid;
-            grid-template-columns: 0.1fr repeat(5, 1fr);
-            grid-template-rows: 0.1fr repeat(3, 1fr);
-            gap: 5px;
-            border: 5px solid #073B4C;
-            border-radius: 10px;
-            padding: 5px;
-            background-color: #A2A9B8;
-            margin-bottom: 20px;
-            width: 100%;
-            max-width: 550px;
-            box-sizing: border-box;
-        }
+  .window-seat { background: #0f172a; transition: background-color 0.4s ease, box-shadow 0.4s ease; }
+  .window-seat.revealed { background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%); box-shadow: inset 0 0 10px rgba(56, 189, 248, 0.7); }
 
-        /* Rótulos externos (A, B, C, 1, 2, 3) */
-        .label-cell {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            color: #073B4C;
-            font-size: 1.1em;
-            background: none;
-        }
-        .empty-corner { grid-row: 1; grid-column: 1; }
+  .animal-in-seat { opacity: 0; transform: scale(0.2); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); filter: blur(4px); }
+  .window-seat.revealed .animal-in-seat { opacity: 1; transform: scale(1); filter: blur(0); }
 
-        /* Células da Matriz (APENAS VISUALIZAÇÃO) */
-        .cell-visual {
-            background-color: #BEE3DB;
-            border: 2px solid #073B4C;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            font-size: 1.2em;
-            position: relative;
-            height: 100%;
-            min-height: 50px;
-            cursor: default;
-        }
+  .bus-door-panel-left { transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+  .bus-door-panel-right { transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+  .door-open .bus-door-panel-left { transform: translateX(-100%); }
+  .door-open .bus-door-panel-right { transform: translateX(100%); }
 
-        /* Cor de destaque da célula (quando o botão correspondente é clicado) */
-        .cell-visual.highlighted {
-            background-color: #33A1F4 !important;
-            border-color: #073B4C !important;
-            color: white;
-            box-shadow: 0 0 10px #33A1F4;
-        }
+  .bus-ramp { transition: transform 0.4s ease, opacity 0.4s ease; transform-origin: top center; transform: scaleY(0); opacity: 0; }
+  .ramp-deployed .bus-ramp { transform: scaleY(1); opacity: 1; }
 
-        /* Estilo para as pegadas no caminho */
-        .cell-visual.visited {
-            background-color: #DDEEEF;
-            font-size: 1.5em;
-        }
+  .pedestrian-actor {
+    position: absolute; font-size: 2.2rem; z-index: 45;
+    transition: left 0.05s linear, top 0.05s linear;
+    filter: drop-shadow(0 3px 3px rgba(0,0,0,0.25));
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .pedestrian-feet { display: flex; gap: 8px; margin-top: -6px; }
+  .foot { width: 6px; height: 4px; background: #334155; border-radius: 999px; }
 
-        /* Cores de Alto Contraste para Elementos (Tabuleiro) */
-        .cell-visual.player {
-            background-color: #FFD166;
-            border-color: #F89B2B;
-            color: #333;
-            font-size: 1.5em;
-        }
-        .cell-visual.start.bomb { background-color: #EF476F; border-color: #B02E4E; color: white; }
-        .cell-visual.coin { background-color: #FFC300; border-color: #DAA520; animation: pulse 1s infinite alternate; font-size: 2em; }
-        .cell-visual.exit { background-color: #06D6A0; border-color: #049A6E; color: white; }
-        .cell-visual.monster-lair { background-color: #118AB2; border-color: #073B4C; color: white; flex-direction: column; font-size: 0.9em; }
-        .cell-visual.blocked { background-color: #C1121F; border-color: #8D0801; opacity: 0.9; color: white; }
+  .mystery-q {
+    position: absolute; font-size: 1.8rem; font-weight: 900;
+    color: #f59e0b; text-shadow: 0 2px 4px rgba(0,0,0,0.35);
+    z-index: 50; pointer-events: none;
+    opacity: 0; transition: all 0.8s ease-out;
+  }
 
-        /* Ícones dos monstros */
-        .olhao-icon, .orelhao-icon { font-size: 2.0em; line-height: 1; }
-        .olhao-dormindo { opacity: 0.8; transform: scale(0.9); filter: blur(0.5px); }
-        .orelhao-atento { animation: moveEars 0.5s infinite alternate; }
-        @keyframes moveEars { 0% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-3px) rotate(5deg); } 100% { transform: translateY(0) rotate(-5deg); } }
+  .option-btn {
+    min-height: 4.5rem; padding: 0.75rem 1rem;
+    font-size: 1.75rem; font-weight: 900;
+    border: 3px solid #1e293b; border-radius: 0.85rem;
+    background: white; box-shadow: 0 4px 0 #1e293b;
+    cursor: pointer; transition: transform 0.12s, background-color 0.15s, box-shadow 0.12s;
+    color: #1e293b;
+  }
+  @media (min-width: 768px) { .option-btn { font-size: 2rem; min-height: 5rem; } }
+  .option-btn:hover { background: #fef08a; transform: translateY(-2px); box-shadow: 0 6px 0 #1e293b; }
+  .option-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #1e293b; }
+  .option-btn.correct { background: #bbf7d0 !important; border-color: #16a34a !important; color: #14532d !important; animation: popCorrect 0.5s ease; }
+  .option-btn.wrong { background: #fecaca !important; border-color: #dc2626 !important; color: #7f1d1d !important; animation: shakeBox 0.4s; }
+  @keyframes popCorrect { 0%{transform:scale(1)} 50%{transform:scale(1.06)} 100%{transform:scale(1)} }
+  @keyframes shakeBox { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
 
-        /* --- 3. Botões de Ação Externos (Centralizado) --- */
-        #action-buttons-wrapper {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-        }
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .options-appear { animation: fadeInUp 0.4s ease both; }
 
-        #action-buttons-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 10px 5px;
-            width: 100%;
-            max-width: 550px;
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #FFFACD;
-            border-radius: 8px;
-            border: 2px solid #FFC300;
-        }
-
-        .cell-action-button {
-            padding: 8px 5px;
-            background-color: #118AB2;
-            color: white;
-            border: 2px solid #073B4C;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.1s, transform 0.1s;
-        }
-
-        .cell-action-button:hover { background-color: #073B4C; }
-
-        .cell-action-button:active { transform: scale(0.95); }
-
-        /* Estilo para o botão selecionado/highlighted */
-        .cell-action-button.highlighted {
-            background-color: #33A1F4;
-            border-color: #073B4C;
-            box-shadow: 0 0 8px #33A1F4;
-        }
-
-        .cell-action-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            background-color: #4ECDC4;
-        }
-
-        /* --- 4. Estilos da Interface (Mensagens e Status) --- */
-        #message-area { margin-bottom: 20px; text-align: center; width: 100%; }
-        #game-message { font-size: 1.4em; color: #073B4C; font-weight: bold; margin-bottom: 15px; }
-
-        #question-box {
-            background-color: #FFFACD;
-            border: 2px solid #FFC300;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 15px;
-            width: 100%;
-            box-sizing: border-box;
-            display: flex;
-            justify-content: center; /* Centraliza o conteúdo da caixa */
-            align-items: center;
-            flex-wrap: wrap; /* Permite quebrar linha em telas menores */
-        }
-        #math-question {
-            font-size: 1.6em;
-            margin-right: 15px;
-            color: #118AB2;
-            white-space: nowrap; /* Mantém a pergunta na mesma linha */
-        }
-
-        input[type="number"] {
-            padding: 12px;
-            border: 1px solid #CCC;
-            border-radius: 5px;
-            font-size: 1.2em;
-            width: 100px; /* Tamanho fixo para input */
-            margin-right: 15px;
-            margin-bottom: 10px;
-            box-sizing: border-box;
-        }
-
-        button.action-btn {
-            background-color: #06D6A0;
-            color: #073B4C;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1.2em;
-            font-weight: bold;
-            transition: background-color 0.2s ease;
-            width: auto;
-            margin-bottom: 10px;
-        }
-
-        button.action-btn:hover { background-color: #049A6E; color: white; }
-        
-        /* Esta é a classe que esconde os elementos */
-        .hidden { 
-            display: none !important; 
-        }
-
-        @media (min-width: 768px) {
-            input[type="number"] {
-                margin-bottom: 0;
-            }
-            button.action-btn {
-                margin-bottom: 0;
-            }
-        }
-    </style>
+  @keyframes pulseQuestion { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
+  .pulse-q { animation: pulseQuestion 0.8s infinite ease-in-out; }
+</style>
 </head>
-<body>
-    <div class="game-container">
-        <h1>Aventura na Matriz! 🧭</h1>
-        <h2 id="score">💰 Pontos: 0</h2>
-        <h2 id="timer">⏳ Tempo restante: 60s</h2>
+<body class="bg-gradient-to-b from-sky-400 via-sky-200 to-emerald-400 min-h-screen flex flex-col items-center justify-between p-2 md:p-4 overflow-x-hidden text-slate-800">
 
-        <div id="game-grid">
-            <div class="label-cell empty-corner"></div>
-            <div class="label-cell" style="grid-column: 2;">A</div>
-            <div class="label-cell" style="grid-column: 3;">B</div>
-            <div class="label-cell" style="grid-column: 4;">C</div>
-            <div class="label-cell" style="grid-column: 5;">D</div>
-            <div class="label-cell" style="grid-column: 6;">E</div>
-            <div class="label-cell" style="grid-row: 2;">1</div>
-            <div class="label-cell" style="grid-row: 3;">2</div>
-            <div class="label-cell" style="grid-row: 4;">3</div>
-        </div>
+  <header class="w-full max-w-4xl bg-white/95 backdrop-blur border-4 border-slate-800 rounded-2xl p-3 shadow-lg flex flex-wrap items-center justify-between gap-2 z-10">
+    <div class="flex items-center gap-2">
+      <span class="text-3xl">🚌</span>
+      <div>
+        <h1 class="text-xl md:text-2xl font-bold leading-none">Busão dos Bichos</h1>
+        <p class="text-xs font-semibold text-slate-500">Terceiro Excluído</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 md:gap-3 font-bold text-sm md:text-base">
+      <button id="muteBtn" title="Som" class="bg-slate-100 border-2 border-slate-800 rounded-xl px-2 py-1 shadow-[0_2px_0_#1e293b] hover:bg-slate-200">🔊</button>
+      <div class="bg-amber-100 border-2 border-slate-800 rounded-xl px-3 py-1 flex items-center gap-1 shadow-[0_2px_0_#1e293b]">
+        <span>⭐</span><span id="scoreVal" class="text-amber-800">0</span>
+      </div>
+      <div class="bg-purple-100 border-2 border-slate-800 rounded-xl px-3 py-1 flex items-center gap-1 shadow-[0_2px_0_#1e293b]">
+        <span>📋</span><span id="questionVal" class="text-purple-800">0/10</span>
+      </div>
+    </div>
+  </header>
 
-        <div id="message-area">
-            <p id="game-message">Bem-vindo(a)! Resolva antes que a bomba estoure!</p>
+  <main id="gameStage" class="w-full max-w-4xl relative h-[300px] md:h-[340px] bg-gradient-to-b from-sky-300 via-sky-100 to-emerald-500 rounded-3xl border-4 border-slate-800 overflow-hidden my-2 shadow-2xl">
+    <div class="absolute top-3 left-8 text-3xl opacity-80">☁️</div>
+    <div class="absolute top-6 right-12 text-4xl opacity-70">☁️</div>
 
-            <div id="question-box">
-                <p id="math-question"></p>
-                <input type="number" id="answer-input" placeholder="Sua resposta" onkeypress="if(event.keyCode == 13) checkAnswer()">
-                <button class="action-btn" onclick="checkAnswer()">Responder</button>
-            </div>
-
-            <div id="action-buttons-wrapper">
-                <div id="action-buttons-grid"></div>
-            </div>
-        </div>
+    <div class="absolute left-1/2 -translate-x-1/2 bottom-[85px] flex flex-col items-center z-10">
+      <div class="bg-rose-500 border-2 border-white text-white font-extrabold text-[11px] px-2.5 py-0.5 rounded-full shadow-md uppercase tracking-wider flex items-center gap-1">
+        <span>🚏</span> PONTO CENTRAL
+      </div>
+      <div class="w-2.5 h-14 bg-slate-400 border border-slate-700 shadow-inner"></div>
+      <div class="w-36 h-3 bg-stone-300 border border-slate-600 rounded-full shadow-md"></div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            /* --- Elementos DOM --- */
-            const gameGrid = document.getElementById('game-grid');
-            const actionButtonsGrid = document.getElementById('action-buttons-grid');
-            const gameMessage = document.getElementById('game-message');
-            const questionBox = document.getElementById('question-box');
-            const mathQuestion = document.getElementById('math-question');
-            const answerInput = document.getElementById('answer-input');
-            const timerDisplay = document.getElementById('timer');
-            const scoreDisplay = document.getElementById('score'); // Elemento do placar
-
-            /* --- Constantes do tabuleiro --- */
-            const COLS = ['A','B','C','D','E'];
-            const ROWS = [1,2,3];
-            const NUM_COLS = COLS.length;
-            const NUM_ROWS = ROWS.length;
-
-            /* --- Estado do Jogo --- */
-            let playerPosition = { row: 0, col: 0 }; // A1
-            let coinPosition = {};
-            const exitPosition = { row: NUM_ROWS - 1, col: NUM_COLS - 1 }; // E3
-
-            const monsterLairPosition = { row: 1, col: 2 }; // C2
-            const olhaoBlockedCellId = 'C1';
-            const orelhaoBlockedCellId = 'C3';
-            const extraBlockedCells = ['B2','D2'];
-
-            let olhaoActive = true;
-            let orelhaoActive = false;
-            let extraTrapsActive = false;
-            let hasCoin = false;
-            let isQuestionPending = true;
-            let currentHighlightId = null;
-            let pathMatrix = [];
-            let isBombActive = true;
-            let totalScore = 0; // Variável de pontuação
-
-            /* --- Timer / GameOver --- */
-            let countdown = 60;
-            let timerInterval = null;
-            let timerActive = false;
-            let isGameOver = false;
-
-            /* --- Timer da Pergunta --- */
-            let questionCountdown = 60;
-            let questionTimerInterval = null;
-
-
-            /* --- Funções utilitárias --- */
-            function coordsToId(row, col) {
-                return `${COLS[col]}${ROWS[row]}`;
-            }
-
-            function idToCoords(id) {
-                if (!id || typeof id !== 'string') return { row: undefined, col: undefined };
-                const col = COLS.indexOf(id[0].toUpperCase());
-                const rowNum = parseInt(id.slice(1), 10);
-                if (isNaN(rowNum) || col < 0) return { row: undefined, col: undefined };
-                return { row: rowNum - 1, col };
-            }
-
-            function generateRandomMathQuestion() {
-                const num1 = Math.floor(Math.random() * 9) + 1;
-                const num2 = Math.floor(Math.random() * 9) + 1;
-                let question, answer;
-                if (Math.random() < 0.5) {
-                    question = `${num1} + ${num2} = ?`;
-                    answer = num1 + num2;
-                } else {
-                    const [n1, n2] = num1 >= num2 ? [num1, num2] : [num2, num1];
-                    question = `${n1} - ${n2} = ?`;
-                    answer = n1 - n2;
-                }
-                return { question, answer };
-            }
-
-            function setHighlight(newId) {
-                if (currentHighlightId) {
-                    const prevCell = document.getElementById(currentHighlightId);
-                    const prevBtn = document.querySelector(`.cell-action-button[data-cell="${currentHighlightId}"]`);
-                    if (prevCell) prevCell.classList.remove('highlighted');
-                    if (prevBtn) prevBtn.classList.remove('highlighted');
-                }
-                currentHighlightId = newId;
-                if (newId) {
-                    const newCell = document.getElementById(newId);
-                    const newBtn = document.querySelector(`.cell-action-button[data-cell="${newId}"]`);
-                    if (newCell) newCell.classList.add('highlighted');
-                    if (newBtn) newBtn.classList.add('highlighted');
-                }
-            }
-
-            /* --- Timer da Pergunta (1 min) --- */
-            function startQuestionTimer() {
-                stopTimer(); // Para o timer principal (caso esteja ativo)
-                if (questionTimerInterval) clearInterval(questionTimerInterval); // Para si mesmo
-
-                questionCountdown = 60;
-                timerDisplay.style.display = 'block';
-                timerDisplay.textContent = `⏳ Tempo para responder: ${questionCountdown}s`;
-
-                questionTimerInterval = setInterval(() => {
-                    questionCountdown--;
-                    timerDisplay.textContent = `⏳ Tempo para responder: ${questionCountdown}s`;
-
-                    if (questionCountdown <= 0) {
-                        clearInterval(questionTimerInterval);
-                        questionTimerInterval = null;
-                        
-                        // Tempo acabou! Força a explosão da bomba
-                        questionBox.classList.add('hidden'); // Esconde a caixa
-                        triggerBombExplosion("⏰ O tempo para responder acabou! A bomba explodiu! O Olhudo dormiu mas Orelhudo acordou! Corra até a saída!");
-                    }
-                }, 1000);
-            }
-
-            function stopQuestionTimer() {
-                if (questionTimerInterval) {
-                    clearInterval(questionTimerInterval);
-                    questionTimerInterval = null;
-                }
-            }
-
-
-            /* --- Timer Principal (Fuga) --- */
-            function startTimer() {
-                // exibe e inicializa
-                timerDisplay.style.display = 'block';
-                countdown = 70;
-                timerActive = true;
-                isGameOver = false;
-                timerDisplay.textContent = `⏳ Tempo de fuga: ${countdown}s`;
-
-                // Garante que se existia um intervalo anterior, limpe
-                if (timerInterval) clearInterval(timerInterval);
-
-                timerInterval = setInterval(() => {
-                    countdown--;
-                    timerDisplay.textContent = `⏳ Tempo de fuga: ${countdown}s`;
-
-                    if (countdown <= 0) {
-                        clearInterval(timerInterval);
-                        timerInterval = null;
-                        timerActive = false;
-                        // trava tudo
-                        lockAllCells();
-                        gameMessage.textContent = "💥 O tempo acabou! Os monstros venceram!";
-                        alert("GAME OVER — O tempo acabou!");
-                    }
-                }, 1000);
-            }
-
-            function stopTimer() {
-                if (timerInterval) {
-                    clearInterval(timerInterval);
-                    timerInterval = null;
-                }
-                timerActive = false;
-                timerDisplay.style.display = 'none';
-            }
-
-            /* --- Bloqueia todas as casas (derrota por tempo) --- */
-            function lockAllCells() {
-                isGameOver = true;
-                // desabilita botões
-                const buttons = document.querySelectorAll('.cell-action-button');
-                buttons.forEach(btn => btn.disabled = true);
-                // pinta todas as células como bloqueadas
-                const cells = document.querySelectorAll('.cell-visual');
-                cells.forEach(c => {
-                    c.classList.add('blocked');
-                    c.innerHTML = '⛔';
-                });
-            }
-
-            /* --- Criação do Tabuleiro Visual --- */
-            function createBoard() {
-                const existingCells = gameGrid.querySelectorAll('.cell-visual');
-                existingCells.forEach(cell => cell.remove());
-
-                for (let r = 0; r < NUM_ROWS; r++) {
-                    for (let c = 0; c < NUM_COLS; c++) {
-                        const cell = document.createElement('div');
-                        cell.classList.add('cell-visual');
-                        const cellId = coordsToId(r, c);
-                        cell.id = cellId;
-
-                        cell.style.gridRow = r + 2;
-                        cell.style.gridColumn = c + 2;
-
-                        // Pegadas
-                        if (pathMatrix[r] && pathMatrix[r][c]) {
-                            cell.classList.add('visited');
-                            cell.innerHTML = '👣';
-                        }
-
-                        // Elementos fixos
-                        if (r === exitPosition.row && c === exitPosition.col) {
-                            if (cell.innerHTML === '') cell.innerHTML = '🚪';
-                            cell.classList.add('exit');
-                        } else if (r === monsterLairPosition.row && c === monsterLairPosition.col) {
-                            cell.classList.add('monster-lair');
-                            let olhaoIcon = olhaoActive ? '👁️' : '😴';
-                            let olhaoClass = olhaoActive ? '' : 'olhao-dormindo';
-                            let orelhaoIcon = orelhaoActive || extraTrapsActive ? '👂' : '😴';
-                            let orelhaoClass = orelhaoActive || extraTrapsActive ? 'orelhao-atento' : 'olhao-dormindo';
-
-                            let olhaoHtml = `<span class="olhao-icon ${olhaoClass}">${olhaoIcon}</span>`;
-                            let orelhaoHtml = `<span class="orelhao-icon ${orelhaoClass}">${orelhaoIcon}</span>`;
-                            cell.innerHTML = `${olhaoHtml} ${orelhaoHtml}`;
-                        }
-
-                        // Moeda (aparece apenas se coinPosition válida e não coletada)
-                        if (coinPosition && coinPosition.row >= 0 && r === coinPosition.row && c === coinPosition.col && !hasCoin) {
-                            cell.classList.remove('visited');
-                            cell.classList.add('coin');
-                            cell.innerHTML = '💰';
-                        }
-
-                        // Bomba (A1)
-                        if (r === 0 && c === 0) {
-                            if (isBombActive) {
-                                cell.classList.add('bomb', 'start');
-                                cell.innerHTML = '<span class="monster-icon">💣</span>';
-                            }
-                        }
-
-                        // Jogador
-                        if (r === playerPosition.row && c === playerPosition.col) {
-                            cell.classList.remove('visited');
-                            cell.classList.add('player', 'start');
-                            if (cell.innerHTML === '') cell.innerHTML = '👣';
-                        }
-
-                        // Aplica bloqueios
-                        let isBlocked = false;
-                        if (olhaoActive && cellId === olhaoBlockedCellId) isBlocked = true;
-                        if (orelhaoActive && cellId === orelhaoBlockedCellId) isBlocked = true;
-                        if (extraTrapsActive && extraBlockedCells.includes(cellId)) isBlocked = true;
-
-                        if (isBlocked) {
-                            cell.classList.add('blocked');
-                            cell.innerHTML = '⛔';
-                        }
-
-                        // Se o jogo acabou, preferir indicar bloqueio visual
-                        if (isGameOver) {
-                            cell.classList.add('blocked');
-                            cell.innerHTML = '⛔';
-                        }
-
-                        gameGrid.appendChild(cell);
-                    }
-                }
-            }
-
-            // ======================================================
-            // *** INÍCIO DA CORREÇÃO DE EMBARALHAR BOTÕES ***
-            // ======================================================
-
-            /* --- Criação dos Botões de Ação --- */
-            function createActionButtons() {
-                actionButtonsGrid.innerHTML = '';
-                const buttonsArray = []; // 1. Criar array temporário
-
-                for (let r = 0; r < NUM_ROWS; r++) {
-                    for (let c = 0; c < NUM_COLS; c++) {
-                        const cellId = coordsToId(r, c);
-                        const button = document.createElement('button');
-                        button.classList.add('cell-action-button');
-                        button.setAttribute('data-cell', cellId);
-                        button.textContent = cellId;
-                        button.onclick = () => selectDestination(cellId);
-
-                        // A1 e C2 sempre desativados como botões (A1 é interação via pergunta)
-                        if (cellId === 'A1' || cellId === 'C2') {
-                            button.disabled = true;
-                        }
-
-                        // Se jogo acabou, desabilitar tudo
-                        if (isGameOver) button.disabled = true;
-
-                        buttonsArray.push(button); // 2. Adicionar botão ao array
-                    }
-                }
-
-                // 3. Embaralhar o array (Algoritmo Fisher-Yates)
-                for (let i = buttonsArray.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [buttonsArray[i], buttonsArray[j]] = [buttonsArray[j], buttonsArray[i]];
-                }
-
-                // 4. Adicionar os botões embaralhados ao grid
-                buttonsArray.forEach(button => actionButtonsGrid.appendChild(button));
-
-
-                // Esta é a linha que controla a exibição do grid de botões
-                const buttonsGridWrapper = document.getElementById('action-buttons-wrapper');
-                buttonsGridWrapper.style.display = isQuestionPending ? 'none' : 'flex';
-            }
-
-            // ======================================================
-            // *** FIM DA CORREÇÃO DE EMBARALHAR BOTÕES ***
-            // ======================================================
-
-            /* --- Seleção de Destino via Botões --- */
-            window.selectDestination = function(targetId) {
-                if (isGameOver) {
-                    gameMessage.textContent = '⛔ O jogo terminou. Reinicie para jogar novamente.';
-                    setHighlight(null);
-                    return;
-                }
-
-                if (isQuestionPending) {
-                    gameMessage.textContent = 'Atenção! Você precisa desarmar a bomba (A1) primeiro!';
-                    setHighlight(null);
-                    return;
-                }
-
-                const targetPos = idToCoords(targetId);
-                const { row: targetRow, col: targetCol } = targetPos;
-                const { row: playerRow, col: playerCol } = playerPosition;
-
-                if (targetRow === undefined || targetCol === undefined) {
-                    gameMessage.textContent = 'Coordenada inválida.';
-                    return;
-                }
-
-                const distRow = Math.abs(targetRow - playerRow);
-                const distCol = Math.abs(targetCol - playerCol);
-                const isAdjacent = (distRow === 1 && distCol === 0) || (distRow === 0 && distCol === 1);
-
-                const isBlockedByOlhao = olhaoActive && targetId === olhaoBlockedCellId;
-                const isBlockedByOrelhao = orelhaoActive && targetId === orelhaoBlockedCellId;
-                const isBlockedByExtraTrap = extraTrapsActive && extraBlockedCells.includes(targetId);
-
-                if (!isAdjacent) {
-                    gameMessage.textContent = `Movimento inválido! Você só pode selecionar casas vizinhas à ${coordsToId(playerRow, playerCol)}.`;
-                    setHighlight(null);
-                    return;
-                }
-
-                if (isBlockedByOlhao || isBlockedByOrelhao || isBlockedByExtraTrap) {
-                    gameMessage.textContent = `⛔ A casa ${targetId} está bloqueada! Tente outra vizinha.`;
-                    setHighlight(null);
-                    return;
-                }
-
-                // Movimento válido: registra a posição anterior como parte do caminho
-                if (!pathMatrix[playerRow]) pathMatrix[playerRow] = [];
-                pathMatrix[playerRow][playerCol] = true;
-
-                // Move o jogador
-                playerPosition = targetPos;
-                gameMessage.textContent = `➡️ Você se moveu para ${targetId}.`;
-
-                // Verifica moeda
-                if (coinPosition && coinPosition.row >= 0 && playerPosition.row === coinPosition.row && playerPosition.col === coinPosition.col && !hasCoin) {
-                    hasCoin = true;
-                    gameMessage.textContent += ' 💰 Você pegou a moeda! Agora encontre a saída!';
-                }
-                
-                // Verificar vitória
-                if (playerPosition.row === exitPosition.row && playerPosition.col === exitPosition.col) {
-                    
-                    // CENÁRIO 1: MODO FUGA (Errou a bomba, timer está ativo)
-                    if (timerActive) {
-                        gameMessage.textContent = '🎉 Ufa! Você escapou da matriz a tempo e VENCEU O JOGO!';
-                        totalScore += 50; 
-                        scoreDisplay.textContent = `💰 Pontos: ${totalScore}`; 
-                        stopTimer();
-                        setTimeout(() => alert('Parabéns! Você VENCEU! (+50 pontos)'), 150); 
-                        setTimeout(() => initializeGame(), 300);
-                        return;
-                    
-                    // CENÁRIO 2: MODO TESOURO (Acertou a bomba, timer desligado)
-                    } else {
-                        if (hasCoin) {
-                            gameMessage.textContent = '🎉 Parabéns! Você alcançou a saída com a moeda e VENCEU O JOGO!';
-                            totalScore += 100; 
-                            scoreDisplay.textContent = `💰 Pontos: ${totalScore}`; 
-                            setTimeout(() => alert('Parabéns! Você VENCEU! (+100 pontos)'), 150);
-                            setTimeout(() => initializeGame(), 300);
-                            return;
-                        } else {
-                            gameMessage.textContent = '🚪 Você chegou à saída, mas ainda não pegou a moeda! Volte e pegue-a!';
-                        }
-                    }
-                }
-
-                setHighlight(targetId);
-                createBoard();
-                createActionButtons();
-            };
-
-            /* --- Inicialização do Jogo --- */
-            function initializeGame() {
-                // limpa estado de tempo se houver
-                stopTimer();
-                stopQuestionTimer(); // Para o timer da pergunta
-                isGameOver = false;
-
-                // Atualiza o placar no início de cada rodada
-                scoreDisplay.textContent = `💰 Pontos: ${totalScore}`;
-
-                pathMatrix = Array(NUM_ROWS).fill(0).map(() => Array(NUM_COLS).fill(false));
-
-                // Define todas as células "ocupadas" que a moeda deve evitar
-                const startPos = { row: 0, col: 0 }; // A1
-                const lairPos = monsterLairPosition; // C2
-                const exitPos = exitPosition; // E3
-                const olhaoPos = idToCoords(olhaoBlockedCellId); // C1
-                const orelhaoPos = idToCoords(orelhaoBlockedCellId); // C3
-                const extraTrap1Pos = idToCoords(extraBlockedCells[0]); // B2
-                const extraTrap2Pos = idToCoords(extraBlockedCells[1]); // D2
-
-                // define posição aleatória da moeda
-                let validCoinPos = false;
-                while (!validCoinPos) {
-                    const r = Math.floor(Math.random() * NUM_ROWS);
-                    const c = Math.floor(Math.random() * NUM_COLS);
-
-                    // Verifica se (r, c) é IGUAL a alguma das posições proibidas
-                    const isStart = (r === startPos.row && c === startPos.col);
-                    const isLair = (r === lairPos.row && c === lairPos.col);
-                    const isExit = (r === exitPos.row && c === exitPos.col);
-                    const isOlhao = (r === olhaoPos.row && c === olhaoPos.col);
-                    const isOrelhao = (r === orelhaoPos.row && c === orelhaoPos.col);
-                    const isTrap1 = (r === extraTrap1Pos.row && c === extraTrap1Pos.col);
-                    const isTrap2 = (r === extraTrap2Pos.row && c === extraTrap2Pos.col);
-
-                    // Se NÃO FOR nenhuma das posições, a posição é válida
-                    if (!isStart && !isLair && !isExit && !isOlhao && !isOrelhao && !isTrap1 && !isTrap2) {
-                        coinPosition = { row: r, col: c };
-                        validCoinPos = true;
-                    }
-                }
-                
-                playerPosition = { row: 0, col: 0 };
-                hasCoin = false;
-                olhaoActive = true;
-                orelhaoActive = false;
-                extraTrapsActive = false;
-                isQuestionPending = true;
-                isBombActive = true;
-                currentHighlightId = null;
-
-                gameMessage.textContent = 'Bem-vindo(a)! Resolva antes que a bomba estoure!';
-                window.mathQ = generateRandomMathQuestion();
-                mathQuestion.textContent = window.mathQ.question;
-
-                // Garante que a caixa de perguntas apareça
-                questionBox.classList.remove('hidden');
-                
-                answerInput.value = '';
-                answerInput.focus();
-
-                createBoard();
-                createActionButtons();
-
-                // Inicia o timer da pergunta
-                startQuestionTimer();
-            }
-
-            /* --- Lógica de Explosão (Refatorada) --- */
-            function triggerBombExplosion(message) {
-                gameMessage.textContent = message;
-                olhaoActive = false;
-                orelhaoActive = true;
-                extraTrapsActive = true;
-
-                // moeda desaparece
-                coinPosition = { row: -1, col: -1 };
-
-                // inicia cronômetro de FUGA (1 minuto)
-                startTimer();
-
-                isQuestionPending = false;
-                isBombActive = false; // bomba some (ícone A1 removido)
-
-                // marca A1 como visitada
-                if (!pathMatrix[playerPosition.row]) pathMatrix[playerPosition.row] = [];
-                pathMatrix[playerPosition.row][playerPosition.col] = true;
-                setHighlight('A1');
-
-                createBoard();
-                createActionButtons();
-            }
-
-
-            /* --- Resposta da Bomba --- */
-            window.checkAnswer = function() {
-                if (!isQuestionPending || !(playerPosition.row === 0 && playerPosition.col === 0)) return;
-                
-                stopQuestionTimer(); // Para o timer da pergunta
-
-                const userAnswer = parseInt(answerInput.value, 10);
-                const correctAnswer = window.mathQ.answer;
-
-                // limpa campo
-                answerInput.value = '';
-                
-                // OCULTA A CAIXA DE PERGUNTA APÓS RESPONDER
-                questionBox.classList.add('hidden');
-
-                if (userAnswer === correctAnswer) {
-                    // ACERTOU: bomba desarmada
-                    gameMessage.textContent = '✅ Resposta correta! A bomba foi desarmada. O Olhão te observa (C1 bloqueada). Escolha seu caminho.';
-                    olhaoActive = true;
-                    orelhaoActive = false;
-                    extraTrapsActive = false;
-
-                    timerDisplay.style.display = 'none'; // Esconde o timer
-
-                    isQuestionPending = false;
-                    isBombActive = false; // bomba some (ícone A1 removido)
-
-                    // marca A1 como visitada
-                    if (!pathMatrix[playerPosition.row]) pathMatrix[playerPosition.row] = [];
-                    pathMatrix[playerPosition.row][playerPosition.col] = true;
-                    setHighlight('A1');
-
-                    createBoard();
-                    createActionButtons();
-                } else {
-                    // ERROU: Chama a lógica de explosão
-                    triggerBombExplosion('❌ Resposta incorreta! A bomba explodiu! O Olhão dormiu (C1 livre), o Orelhão acordou (C3) e armadilhas extras ativadas (B2, D2). Corra até a saída!');
-                }
-            };
-
-            // inicia
-            initializeGame();
-        });
-    </script>
+    <div id="busContainer" class="absolute bottom-[28px] -left-[620px] w-[520px] md:w-[580px] h-[115px] md:h-[125px] z-30 transition-all duration-300">
+      <div class="absolute -top-10 left-1/2 -translate-x-1/2 hidden" id="mysteryBadge">
+        <div class="bg-purple-600 text-white font-black px-4 py-1 rounded-xl border-3 border-slate-800 shadow-lg text-xl pulse-q">❓</div>
+      </div>
+
+      <div id="busBody" class="relative w-full h-full bg-amber-400 border-4 border-slate-800 rounded-t-3xl rounded-b-xl shadow-[inset_0_-8px_0_#d97706] p-2 flex gap-1.5 items-center">
+        <div class="absolute right-0 bottom-4 w-2 h-6 bg-yellow-200 border-2 border-slate-800 rounded-r-md shadow-[0_0_8px_#fef08a]"></div>
+
+        <div id="doorFrame" class="absolute right-14 bottom-0 w-11 h-[88px] bg-slate-900 border-t-2 border-x-2 border-slate-800 rounded-t-lg z-40 overflow-hidden flex shadow-inner">
+          <div class="bus-door-panel-left w-1/2 h-full bg-sky-200 border-r border-slate-800 p-0.5 flex flex-col justify-between">
+            <div class="w-full h-1/2 bg-sky-100 border border-slate-400 rounded-sm"></div>
+            <div class="w-full h-1/3 bg-slate-300 rounded-sm"></div>
+          </div>
+          <div class="bus-door-panel-right w-1/2 h-full bg-sky-200 border-l border-slate-800 p-0.5 flex flex-col justify-between">
+            <div class="w-full h-1/2 bg-sky-100 border border-slate-400 rounded-sm"></div>
+            <div class="w-full h-1/3 bg-slate-300 rounded-sm"></div>
+          </div>
+        </div>
+
+        <div id="busRampContainer" class="bus-ramp absolute right-[52px] -bottom-[10px] w-12 h-3 bg-stone-400 border-2 border-slate-800 rounded-b-md z-30 shadow-md">
+          <div class="w-full h-full bg-yellow-400 border-t border-slate-600"></div>
+        </div>
+
+        <div class="w-[430px] md:w-[490px] h-[58px] md:h-[64px] grid grid-cols-10 gap-1 pr-12">
+          <div class="window-seat rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1">1</span><span id="seat0" class="animal-in-seat text-xl md:text-2xl"></span></div>
+          <div class="window-seat rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1">2</span><span id="seat1" class="animal-in-seat text-xl md:text-2xl"></span></div>
+          <div class="window-seat rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1">3</span><span id="seat2" class="animal-in-seat text-xl md:text-2xl"></span></div>
+          <div class="window-seat rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1">4</span><span id="seat3" class="animal-in-seat text-xl md:text-2xl"></span></div>
+          <div class="window-seat rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1">5</span><span id="seat4" class="animal-in-seat text-xl md:text-2xl"></span></div>
+          <div class="window-seat rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1">6</span><span id="seat5" class="animal-in-seat text-xl md:text-2xl"></span></div>
+          <div class="window-seat rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1">7</span><span id="seat6" class="animal-in-seat text-xl md:text-2xl"></span></div>
+          <div class="window-seat rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1">8</span><span id="seat7" class="animal-in-seat text-xl md:text-2xl"></span></div>
+          <div class="window-seat rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1">9</span><span id="seat8" class="animal-in-seat text-xl md:text-2xl"></span></div>
+          <div class="window-seat rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1">10</span><span id="seat9" class="animal-in-seat text-xl md:text-2xl"></span></div>
+        </div>
+
+        <div class="absolute -bottom-4 left-10 w-10 h-10 bg-slate-900 border-4 border-slate-800 rounded-full flex items-center justify-center shadow-lg z-50">
+          <div id="wheel1" class="w-3 h-3 bg-slate-300 rounded-full border border-slate-800"></div>
+        </div>
+        <div class="absolute -bottom-4 right-16 w-10 h-10 bg-slate-900 border-4 border-slate-800 rounded-full flex items-center justify-center shadow-lg z-50">
+          <div id="wheel2" class="w-3 h-3 bg-slate-300 rounded-full border border-slate-800"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="walkStage" class="absolute inset-0 pointer-events-none z-50"></div>
+
+    <div class="absolute bottom-0 left-0 right-0 h-[38px] bg-slate-700 border-t-4 border-slate-800 flex items-center justify-around">
+      <div class="absolute -top-[10px] left-0 right-0 h-[10px] bg-stone-300 border-t-2 border-slate-600"></div>
+      <div class="w-12 h-1.5 bg-amber-400 rounded-full"></div>
+      <div class="w-12 h-1.5 bg-amber-400 rounded-full"></div>
+      <div class="w-12 h-1.5 bg-amber-400 rounded-full"></div>
+      <div class="w-12 h-1.5 bg-amber-400 rounded-full"></div>
+      <div class="w-12 h-1.5 bg-amber-400 rounded-full"></div>
+    </div>
+  </main>
+
+  <footer class="w-full max-w-4xl bg-white/95 backdrop-blur border-4 border-slate-800 rounded-2xl p-3 shadow-xl flex flex-col gap-2 z-10">
+    <div class="bg-sky-50 border-2 border-sky-300 rounded-xl p-2.5 text-center flex items-center justify-center gap-2 min-h-[48px]">
+      <span id="statusIcon" class="text-2xl animate-bounce">📢</span>
+      <p id="statusMsg" class="font-bold text-sm md:text-base text-slate-800 leading-tight">
+        Clique em "Iniciar Jogo" para começar!
+      </p>
+    </div>
+
+    <div id="optionsArea" class="hidden flex flex-col gap-3">
+      <div id="questionPrompt" class="text-center"></div>
+      <div id="optionsGrid" class="grid grid-cols-3 gap-2 md:gap-3"></div>
+    </div>
+  </footer>
+
+  <!-- Welcome Modal -->
+  <div id="modalOverlay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white border-4 border-slate-800 rounded-3xl p-5 md:p-6 max-w-md w-full text-center shadow-2xl flex flex-col items-center gap-4">
+      <div class="text-5xl animate-bounce">🚌🦁🐼</div>
+      <h2 class="text-2xl font-black">Busão dos Bichos!</h2>
+      <div class="text-sm font-semibold text-slate-600 flex flex-col gap-2 text-left bg-sky-50 p-4 rounded-2xl border-2 border-sky-200">
+        <p>🎯 <strong>10 desafios</strong> de adição e subtração com o busão!</p>
+        <p>🔍 Às vezes você vai descobrir <strong>quantos ficaram</strong>, às vezes <strong>quantos havia no início</strong>, às vezes <strong>quantos entraram ou saíram</strong>.</p>
+        <p>👀 Preste atenção em cada pista. Escolha a <strong>resposta certa</strong> entre 3 opções!</p>
+        <p>💡 Acertos de primeira valem mais pontos!</p>
+      </div>
+      <button id="startModalBtn" class="w-full bg-emerald-400 hover:bg-emerald-300 text-slate-900 font-black text-lg py-3 rounded-xl border-3 border-slate-800 shadow-[0_4px_0_#1e293b] active:translate-y-1 active:shadow-none transition-all">
+        Iniciar Jogo 🚀
+      </button>
+    </div>
+  </div>
+
+  <!-- End Modal -->
+  <div id="endModal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white border-4 border-slate-800 rounded-3xl p-5 md:p-6 max-w-md w-full text-center shadow-2xl flex flex-col items-center gap-4">
+      <div class="text-6xl">🏆</div>
+      <h2 class="text-2xl font-black">Parabéns! Você completou os 10 desafios!</h2>
+      <div class="bg-amber-100 border-2 border-amber-500 rounded-2xl p-4 w-full">
+        <div class="text-sm font-bold text-amber-700">PONTUAÇÃO FINAL</div>
+        <div class="text-4xl font-black text-amber-900"><span id="finalScore">0</span> ⭐</div>
+      </div>
+      <div id="finalStats" class="text-sm font-semibold text-slate-600"></div>
+      <button id="playAgainBtn" class="w-full bg-emerald-400 hover:bg-emerald-300 text-slate-900 font-black text-lg py-3 rounded-xl border-3 border-slate-800 shadow-[0_4px_0_#1e293b] active:translate-y-1 active:shadow-none transition-all">
+        Jogar de Novo 🔄
+      </button>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // ============================================================
+  // SOUND MANAGER
+  // ============================================================
+  const SOUNDS_BASE = 'sounds/';
+  const SOUND_FILES = {
+    busArriving:      SOUNDS_BASE + 'bus-arriving.mp3',
+    animalsBoarding:  SOUNDS_BASE + 'animals-boarding.mp3',
+    animalsLeaving:   SOUNDS_BASE + 'animals-leaving.mp3',
+    busAtDestination: SOUNDS_BASE + 'bus-at-destination.mp3',
+    error:            SOUNDS_BASE + 'error.mp3',
+    success:          SOUNDS_BASE + 'success.mp3',
+    levelUp:          SOUNDS_BASE + 'level-up.mp3'
+  };
+
+  const SoundManager = (() => {
+    const cache = {};
+    let enabled = true;
+    function init() {
+      for (const [key, path] of Object.entries(SOUND_FILES)) {
+        const audio = new Audio();
+        audio.preload = 'auto';
+        audio.src = path;
+        audio.addEventListener('error', () => {});
+        cache[key] = audio;
+      }
+    }
+    function play(key, { volume = 0.7 } = {}) {
+      if (!enabled) return;
+      const t = cache[key];
+      if (!t) return;
+      try {
+        const c = t.cloneNode();
+        c.volume = volume;
+        const p = c.play();
+        if (p && p.catch) p.catch(() => {});
+      } catch (e) {}
+    }
+    function setEnabled(v) { enabled = v; }
+    function isEnabled() { return enabled; }
+    return { init, play, setEnabled, isEnabled };
+  })();
+  SoundManager.init();
+
+  // ============================================================
+  // CONSTANTES
+  // ============================================================
+  const TOTAL_QUESTIONS = 10;
+  const MAX_CAPACITY = 10;
+  const ANIMAL_POOL = ["🦁", "🐼", "🦊", "🐸", "🐵", "🐰", "🐯", "🐷", "🐨", "🐮"];
+
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const rand = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+  const getRandomAnimal = () => ANIMAL_POOL[Math.floor(Math.random() * ANIMAL_POOL.length)];
+  const shuffle = (arr) => {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  };
+
+  // Plano de questões: progressão cognitiva
+  // cenário 1 = final | cenário 2 = inicial | cenário 3 = transformação
+  const QUESTION_PLAN = [
+    { scenario: 1, diff: 'easy',   transform: 'single' }, // Q1
+    { scenario: 1, diff: 'easy',   transform: 'single' }, // Q2
+    { scenario: 1, diff: 'easy',   transform: 'single' }, // Q3
+    { scenario: 3, diff: 'easy',   transform: 'single' }, // Q4
+    { scenario: 1, diff: 'medium', transform: 'both'   }, // Q5
+    { scenario: 3, diff: 'medium', transform: 'single' }, // Q6
+    { scenario: 2, diff: 'medium', transform: 'single' }, // Q7
+    { scenario: 2, diff: 'medium', transform: 'both'   }, // Q8
+    { scenario: 'mix', diff: 'hard', transform: 'both' }, // Q9
+    { scenario: 'mix', diff: 'hard', transform: 'both' }  // Q10
+  ];
+
+  function getRanges(diff) {
+    if (diff === 'easy')   return { init: [2, 5], trans: [1, 2] };
+    if (diff === 'medium') return { init: [3, 6], trans: [1, 3] };
+    return                        { init: [4, 8], trans: [2, 4] };
+  }
+
+  // ============================================================
+  // ESTADO
+  // ============================================================
+  let questionNumber = 0;
+  let score = 0;
+  let firstTryCorrect = 0;
+  let currentQuestion = null;
+  let currentOptions = [];
+  let optionButtons = [];
+  let roundAttempts = 0;
+  let optionsLocked = false;
+  let currentPassengers = [];
+
+  // ============================================================
+  // DOM
+  // ============================================================
+  const gameStage = document.getElementById("gameStage");
+  const busContainer = document.getElementById("busContainer");
+  const doorFrame = document.getElementById("doorFrame");
+  const busRampContainer = document.getElementById("busRampContainer");
+  const walkStage = document.getElementById("walkStage");
+  const wheel1 = document.getElementById("wheel1");
+  const wheel2 = document.getElementById("wheel2");
+  const mysteryBadge = document.getElementById("mysteryBadge");
+
+  const statusMsg = document.getElementById("statusMsg");
+  const statusIcon = document.getElementById("statusIcon");
+  const scoreVal = document.getElementById("scoreVal");
+  const questionVal = document.getElementById("questionVal");
+
+  const optionsArea = document.getElementById("optionsArea");
+  const optionsGrid = document.getElementById("optionsGrid");
+  const questionPrompt = document.getElementById("questionPrompt");
+  const muteBtn = document.getElementById("muteBtn");
+
+  // ============================================================
+  // HUD
+  // ============================================================
+  function updateHUD() {
+    scoreVal.textContent = score;
+    questionVal.textContent = `${questionNumber}/${TOTAL_QUESTIONS}`;
+  }
+
+  // ============================================================
+  // ANIMAÇÕES BÁSICAS
+  // ============================================================
+  function setDriving(on) {
+    busContainer.classList.toggle("bus-driving", on);
+    wheel1.classList.toggle("spinning-wheel", on);
+    wheel2.classList.toggle("spinning-wheel", on);
+  }
+
+  function renderSeats(wave = false) {
+    for (let i = 0; i < 10; i++) {
+      const el = document.getElementById(`seat${i}`);
+      el.textContent = currentPassengers[i] || "";
+      el.classList.toggle("waving", wave && !!currentPassengers[i]);
+    }
+  }
+
+  function setWindowsRevealed(v) {
+    document.querySelectorAll(".window-seat").forEach(s => s.classList.toggle("revealed", v));
+  }
+
+  function setDoorOpen(v) {
+    doorFrame.classList.toggle("door-open", v);
+    busRampContainer.classList.toggle("ramp-deployed", v);
+  }
+
+  function moveBus(leftPx, durationMs) {
+    return new Promise(resolve => {
+      setDriving(true);
+      busContainer.style.transition = `left ${durationMs}ms cubic-bezier(0.25, 1, 0.5, 1)`;
+      busContainer.style.left = `${leftPx}px`;
+      setTimeout(() => { setDriving(false); resolve(); }, durationMs);
+    });
+  }
+
+  function createPedestrian(emoji) {
+    const wrap = document.createElement("div");
+    wrap.className = "pedestrian-actor walking-actor";
+    const body = document.createElement("div");
+    body.textContent = emoji;
+    const feet = document.createElement("div");
+    feet.className = "pedestrian-feet";
+    feet.innerHTML = `<div class="foot"></div><div class="foot"></div>`;
+    wrap.appendChild(body);
+    wrap.appendChild(feet);
+    return wrap;
+  }
+
+  function animatePath(actor, x1, y1, x2, y2, duration) {
+    return new Promise(resolve => {
+      const startTime = performance.now();
+      function step(t) {
+        const elapsed = t - startTime;
+        const p = Math.min(elapsed / duration, 1);
+        actor.style.left = `${x1 + (x2 - x1) * p}px`;
+        actor.style.top = `${y1 + (y2 - y1) * p}px`;
+        if (p < 1) requestAnimationFrame(step);
+        else resolve();
+      }
+      requestAnimationFrame(step);
+    });
+  }
+
+  // ============================================================
+  // GERADORES DE QUESTÃO
+  // ============================================================
+  function generateScenario1(diff, transform) {
+    const r = getRanges(diff);
+    let initial = rand(r.init[0], r.init[1]);
+    let leave = 0, board = 0;
+
+    if (transform === 'single') {
+      const dir = Math.random() < 0.5 ? 'leave' : 'board';
+      if (dir === 'leave') {
+        leave = rand(r.trans[0], Math.min(r.trans[1], initial - 1));
+      } else {
+        board = rand(r.trans[0], Math.min(r.trans[1], MAX_CAPACITY - initial));
+      }
+    } else {
+      leave = rand(r.trans[0], Math.min(r.trans[1], initial - 1));
+      const maxBoard = MAX_CAPACITY - (initial - leave);
+      board = rand(r.trans[0], Math.min(r.trans[1], maxBoard));
+    }
+
+    const final = initial - leave + board;
+    return { scenario: 1, initial, leave, board, final, ask: 'final', answer: final };
+  }
+
+  function generateScenario2(diff, transform) {
+    const r = getRanges(diff);
+    let initial, leave, board, final;
+    let safety = 0;
+
+    do {
+      safety++;
+      initial = rand(r.init[0], r.init[1]);
+      leave = 0; board = 0;
+
+      if (transform === 'single') {
+        const dir = Math.random() < 0.5 ? 'leave' : 'board';
+        if (dir === 'leave') {
+          if (initial - 1 >= r.trans[0]) {
+            leave = rand(r.trans[0], Math.min(r.trans[1], initial - 1));
+          } else {
+            board = rand(r.trans[0], Math.min(r.trans[1], MAX_CAPACITY - initial));
+          }
+        } else {
+          if (MAX_CAPACITY - initial >= r.trans[0]) {
+            board = rand(r.trans[0], Math.min(r.trans[1], MAX_CAPACITY - initial));
+          } else {
+            leave = rand(r.trans[0], Math.min(r.trans[1], initial - 1));
+          }
+        }
+      } else {
+        leave = rand(r.trans[0], Math.min(r.trans[1], initial - 1));
+        const maxBoard = MAX_CAPACITY - (initial - leave);
+        board = rand(r.trans[0], Math.min(r.trans[1], maxBoard));
+      }
+
+      final = initial - leave + board;
+    } while ((final < 1 || final > MAX_CAPACITY) && safety < 30);
+
+    return { scenario: 2, initial, leave, board, final, ask: 'initial', answer: initial };
+  }
+
+  function generateScenario3(diff, transform) {
+    const r = getRanges(diff);
+    let initial, leave, board, final, direction;
+    let safety = 0;
+
+    do {
+      safety++;
+      initial = rand(r.init[0], r.init[1]);
+      direction = Math.random() < 0.5 ? 'leave' : 'board';
+      leave = 0; board = 0;
+
+      if (direction === 'leave') {
+        if (initial - 1 < r.trans[0]) { direction = 'board'; }
+        else { leave = rand(r.trans[0], Math.min(r.trans[1], initial - 1)); }
+      }
+      if (direction === 'board') {
+        if (MAX_CAPACITY - initial < r.trans[0]) { direction = 'leave'; }
+        else if (board === 0) { board = rand(r.trans[0], Math.min(r.trans[1], MAX_CAPACITY - initial)); }
+      }
+
+      final = initial - leave + board;
+    } while ((leave === 0 && board === 0) && safety < 30);
+
+    const answer = direction === 'leave' ? leave : board;
+    return { scenario: 3, initial, leave, board, final, ask: direction, answer, askLabel: direction === 'leave' ? 'saíram' : 'entraram' };
+  }
+
+  function generateQuestion() {
+    const plan = QUESTION_PLAN[questionNumber - 1];
+    let scenario = plan.scenario;
+    if (scenario === 'mix') {
+      const pool = [1, 2, 3];
+      scenario = pool[Math.floor(Math.random() * pool.length)];
+    }
+    if (scenario === 1) return generateScenario1(plan.diff, plan.transform);
+    if (scenario === 2) return generateScenario2(plan.diff, plan.transform);
+    return generateScenario3(plan.diff, plan.transform);
+  }
+
+  // ============================================================
+  // GERADOR DE OPÇÕES
+  // ============================================================
+  function generateOptions(q) {
+    const correct = q.answer;
+    const used = new Set([correct]);
+    const candidates = [];
+
+    function addIfValid(v) {
+      if (typeof v !== 'number' || v < 0 || v > MAX_CAPACITY || used.has(v)) return false;
+      used.add(v);
+      candidates.push(v);
+      return true;
+    }
+
+    if (q.scenario === 1) {
+      if (q.leave > 0 && q.board > 0) {
+        addIfValid(q.initial + q.leave + q.board);
+        addIfValid(q.initial - q.leave - q.board);
+      } else if (q.leave > 0) {
+        addIfValid(q.initial + q.leave);
+      } else {
+        addIfValid(q.initial - q.board);
+      }
+      addIfValid(q.initial);
+      addIfValid(correct + 1);
+      addIfValid(correct - 1);
+    } else if (q.scenario === 2) {
+      if (q.leave > 0 && q.board > 0) {
+        addIfValid(q.final + q.board - q.leave);
+        addIfValid(q.final - q.board - q.leave);
+      } else if (q.leave > 0) {
+        addIfValid(q.final - q.leave);
+      } else {
+        addIfValid(q.final + q.board);
+      }
+      addIfValid(q.final);
+      addIfValid(correct + 1);
+      addIfValid(correct - 1);
+    } else {
+      addIfValid(q.initial + q.final);
+      addIfValid(Math.max(q.initial, q.final));
+      addIfValid(correct + 1);
+      addIfValid(correct - 1);
+    }
+
+    const distractors = candidates.slice(0, 2);
+    let offset = 1;
+    while (distractors.length < 2) {
+      if (correct + offset <= MAX_CAPACITY && !used.has(correct + offset)) {
+        used.add(correct + offset);
+        distractors.push(correct + offset);
+      } else if (correct - offset >= 0 && !used.has(correct - offset)) {
+        used.add(correct - offset);
+        distractors.push(correct - offset);
+      }
+      offset++;
+      if (offset > MAX_CAPACITY) break;
+    }
+
+    const arr = [
+      { val: correct, isCorrect: true, hint: getHint(q) },
+      { val: distractors[0], isCorrect: false, hint: getHint(q) },
+      { val: distractors[1], isCorrect: false, hint: getHint(q) }
+    ];
+    return shuffle(arr);
+  }
+
+  function getHint(q) {
+    if (q.scenario === 1) {
+      if (q.leave > 0 && q.board > 0)
+        return `Havia ${q.initial}. Saíram ${q.leave} (subtrai). Entraram ${q.board} (soma). Faça: ${q.initial} − ${q.leave} + ${q.board} = ${q.final}.`;
+      if (q.leave > 0)
+        return `Havia ${q.initial} e saíram ${q.leave}. Quem sai, subtrai: ${q.initial} − ${q.leave} = ${q.final}.`;
+      return `Havia ${q.initial} e entraram ${q.board}. Quem entra, soma: ${q.initial} + ${q.board} = ${q.final}.`;
+    }
+    if (q.scenario === 2) {
+      if (q.leave > 0 && q.board > 0)
+        return `Agora há ${q.final}. Para descobrir o início, desfaça: ${q.final} − ${q.board} + ${q.leave} = ${q.initial}.`;
+      if (q.leave > 0)
+        return `Agora há ${q.final} e ${q.leave} saíram. Para descobrir o início, some de volta: ${q.final} + ${q.leave} = ${q.initial}.`;
+      return `Agora há ${q.final} e ${q.board} entraram. Para descobrir o início, subtraia: ${q.final} − ${q.board} = ${q.initial}.`;
+    }
+    const diff = Math.abs(q.final - q.initial);
+    if (q.ask === 'leave')
+      return `Havia ${q.initial} e agora há ${q.final}. Quem saiu é a diferença: ${q.initial} − ${q.final} = ${diff}.`;
+    return `Havia ${q.initial} e agora há ${q.final}. Quem entrou é a diferença: ${q.final} − ${q.initial} = ${diff}.`;
+  }
+
+  function getPrompt(q) {
+    if (q.scenario === 1) return "Quantos animais ficaram no busão?";
+    if (q.scenario === 2) return "Quantos animais havia no início?";
+    return q.ask === 'leave' ? "Quantos animais saíram?" : "Quantos animais entraram?";
+  }
+
+  // ============================================================
+  // FLUXO DA QUESTÃO
+  // ============================================================
+  async function runQuestion(q) {
+    walkStage.innerHTML = "";
+    setDoorOpen(false);
+    setWindowsRevealed(false);
+    mysteryBadge.classList.add("hidden");
+    optionsArea.classList.add("hidden");
+    optionsGrid.innerHTML = "";
+
+    currentPassengers = Array(q.initial).fill(null).map(() => getRandomAnimal());
+    renderSeats();
+
+    busContainer.style.transition = "none";
+    busContainer.style.left = "-620px";
+
+    const centerLeft = (gameStage.clientWidth / 2) - 260;
+
+    if (q.scenario === 2) {
+      statusIcon.textContent = "🚌";
+      statusMsg.textContent = "O busão chegou... mas não sabemos quantos animais estão dentro!";
+      SoundManager.play('busArriving');
+
+      await moveBus(15, 1200);
+      await sleep(800);
+
+      statusIcon.textContent = "🏣";
+      statusMsg.textContent = "Indo para o Ponto Central...";
+      await moveBus(centerLeft, 1400);
+      SoundManager.play('busAtDestination');
+
+      setDoorOpen(true);
+      await sleep(600);
+
+      await performTransformations(q);
+
+      setDoorOpen(false);
+      await sleep(500);
+
+      setWindowsRevealed(true);
+      renderSeats();
+      statusIcon.textContent = "👀";
+      statusMsg.textContent = `Agora há ${q.final} animais no busão!`;
+      await sleep(2200);
+
+      showOptions(q);
+
+    } else {
+      statusIcon.textContent = "🚌";
+      statusMsg.textContent = "O busão está chegando!";
+      SoundManager.play('busArriving');
+
+      await moveBus(15, 1200);
+
+      statusIcon.textContent = "👀";
+      statusMsg.textContent = "Memorize quem está a bordo!";
+      setWindowsRevealed(true);
+      renderSeats(true);
+      await sleep(5000);
+
+      renderSeats(false);
+      setWindowsRevealed(false);
+      statusIcon.textContent = "🏣";
+      statusMsg.textContent = `Havia ${q.initial} animais no início. Indo para o Ponto Central...`;
+      await moveBus(centerLeft, 1400);
+      SoundManager.play('busAtDestination');
+
+      setDoorOpen(true);
+      await sleep(600);
+
+      if (q.scenario === 1) {
+        await performTransformations(q);
+      } else {
+        await performMysteryTransformation(q);
+      }
+
+      setDoorOpen(false);
+      await sleep(500);
+
+      if (q.scenario === 3) {
+        setWindowsRevealed(true);
+        renderSeats();
+        statusIcon.textContent = "👀";
+        statusMsg.textContent = `Agora há ${q.final} animais no busão!`;
+        await sleep(2200);
+      }
+
+      showOptions(q);
+    }
+  }
+
+  async function performTransformations(q) {
+    const busRect = busContainer.getBoundingClientRect();
+    const stageRect = gameStage.getBoundingClientRect();
+    const doorX = (busRect.left - stageRect.left) + (busRect.width * 0.81);
+    const busFloorY = (busRect.top - stageRect.top) + (busRect.height * 0.38);
+    const sidewalkY = (busRect.top - stageRect.top) + (busRect.height * 0.72);
+
+    if (q.leave > 0) {
+      statusIcon.textContent = "🚶";
+      statusMsg.textContent = `${q.leave} bicho(s) desembarcando!`;
+      SoundManager.play('animalsLeaving');
+
+      for (let i = 0; i < q.leave; i++) {
+        await sleep(1100);
+        const emoji = currentPassengers.pop() || getRandomAnimal();
+        renderSeats();
+        const actor = createPedestrian(emoji);
+        actor.style.left = `${doorX}px`;
+        actor.style.top = `${busFloorY}px`;
+        walkStage.appendChild(actor);
+        await animatePath(actor, doorX, busFloorY, doorX, sidewalkY, 600);
+        await animatePath(actor, doorX, sidewalkY, stageRect.width + 60, sidewalkY, 1800);
+        actor.remove();
+      }
+      await sleep(300);
+    }
+
+    if (q.board > 0) {
+      statusIcon.textContent = "🚶";
+      statusMsg.textContent = `${q.board} bicho(s) embarcando!`;
+      SoundManager.play('animalsBoarding');
+
+      for (let i = 0; i < q.board; i++) {
+        await sleep(900);
+        const emoji = getRandomAnimal();
+        const actor = createPedestrian(emoji);
+        actor.style.left = `-50px`;
+        actor.style.top = `${sidewalkY}px`;
+        walkStage.appendChild(actor);
+        await animatePath(actor, -50, sidewalkY, doorX, sidewalkY, 1600);
+        await animatePath(actor, doorX, sidewalkY, doorX, busFloorY, 600);
+        actor.remove();
+        currentPassengers.push(emoji);
+        renderSeats();
+      }
+    }
+  }
+
+  async function performMysteryTransformation(q) {
+    const busRect = busContainer.getBoundingClientRect();
+    const stageRect = gameStage.getBoundingClientRect();
+    const doorX = (busRect.left - stageRect.left) + (busRect.width * 0.81);
+    const doorY = (busRect.top - stageRect.top) + (busRect.height * 0.5);
+
+    const direction = q.ask === 'leave' ? 'out' : 'in';
+
+    statusIcon.textContent = "❓";
+    statusMsg.textContent = "Animais misteriosos passando pela porta! Não dá para contar quantos...";
+    mysteryBadge.classList.remove("hidden");
+
+    for (let i = 0; i < 6; i++) {
+      const el = document.createElement("div");
+      el.className = "mystery-q";
+      el.textContent = "?";
+      el.style.left = `${doorX}px`;
+      el.style.top = `${doorY}px`;
+      walkStage.appendChild(el);
+
+      setTimeout(() => {
+        el.style.opacity = '1';
+        const dx = direction === 'out' ? (Math.random() * 80 + 20) : -(Math.random() * 80 + 20);
+        const dy = direction === 'out' ? (Math.random() * 30 + 10) : -(Math.random() * 30 + 10);
+        el.style.transform = `translate(${dx}px, ${dy}px)`;
+      }, i * 130);
+
+      setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 400);
+      }, 900 + i * 130);
+    }
+
+    if (q.leave > 0) {
+      for (let i = 0; i < q.leave; i++) currentPassengers.pop();
+    }
+    if (q.board > 0) {
+      for (let i = 0; i < q.board; i++) currentPassengers.push(getRandomAnimal());
+    }
+
+    await sleep(2400);
+    mysteryBadge.classList.add("hidden");
+  }
+
+  // ============================================================
+  // MOSTRAR OPÇÕES
+  // ============================================================
+  function showOptions(q) {
+    currentOptions = generateOptions(q);
+    optionsGrid.innerHTML = "";
+    optionButtons = [];
+    roundAttempts = 0;
+    optionsLocked = false;
+
+    currentOptions.forEach((opt, idx) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "option-btn";
+      btn.textContent = opt.val;
+      btn.dataset.idx = idx;
+      btn.addEventListener("click", () => handleOptionClick(idx, q));
+      optionsGrid.appendChild(btn);
+      optionButtons.push(btn);
+    });
+
+    // Pergunta em destaque com alto contraste (apenas uma vez)
+    questionPrompt.innerHTML = `<span class="inline-block bg-indigo-600 text-white font-black text-base md:text-lg px-6 py-2.5 rounded-xl border-3 border-slate-800 shadow-[0_3px_0_#1e293b]">${getPrompt(q)}</span>`;
+    
+    // Banner superior focado apenas em instrução/ação
+    statusIcon.textContent = "🎯";
+    statusMsg.textContent = "Hora de responder! Escolha uma das opções abaixo.";
+    
+    optionsArea.classList.remove("hidden");
+    optionsArea.classList.remove("options-appear");
+    void optionsArea.offsetWidth;
+    optionsArea.classList.add("options-appear");
+  }
+
+  // ============================================================
+  // CLIQUE EM OPÇÃO
+  // ============================================================
+  function handleOptionClick(idx, q) {
+    if (optionsLocked) return;
+    const opt = currentOptions[idx];
+    const btn = optionButtons[idx];
+    if (!opt || !btn || btn.disabled) return;
+
+    if (opt.isCorrect) {
+      optionsLocked = true;
+      btn.classList.add("correct");
+      SoundManager.play('success');
+
+      if (roundAttempts === 0) firstTryCorrect++;
+      const points = roundAttempts === 0 ? 10 * questionNumber
+                   : roundAttempts === 1 ? 5 * questionNumber
+                   : 2 * questionNumber;
+      score += points;
+      updateHUD();
+
+      statusIcon.textContent = "🎉";
+      statusMsg.textContent = `Isso! ${opt.hint}`;
+
+      setWindowsRevealed(true);
+      renderSeats(true);
+
+      setTimeout(() => {
+        statusIcon.textContent = "🚀";
+        statusMsg.textContent = "Próxima parada!";
+        const sw = gameStage.clientWidth;
+        moveBus(sw + 120, 1400).then(() => advanceQuestion());
+      }, 2400);
+
+    } else {
+      roundAttempts++;
+      btn.classList.add("wrong");
+      btn.disabled = true;
+      SoundManager.play('error');
+
+      statusIcon.textContent = "❌";
+      statusMsg.textContent = opt.hint || "Essa não é a resposta certa.";
+
+      if (roundAttempts >= 2) {
+        const correctIdx = currentOptions.findIndex(o => o.isCorrect);
+        const correctBtn = optionButtons[correctIdx];
+        if (correctBtn) {
+          correctBtn.classList.add("correct");
+          optionsLocked = true;
+          setTimeout(() => {
+            const points = 2 * questionNumber;
+            score += points;
+            updateHUD();
+            statusIcon.textContent = "💡";
+            statusMsg.textContent = `A resposta certa era ${currentOptions[correctIdx].val}. ${currentOptions[correctIdx].hint}`;
+            setWindowsRevealed(true);
+            renderSeats(true);
+            setTimeout(() => {
+              const sw = gameStage.clientWidth;
+              moveBus(sw + 120, 1400).then(() => advanceQuestion());
+            }, 3200);
+          }, 900);
+        }
+      }
+    }
+  }
+
+  // ============================================================
+  // AVANÇO DE QUESTÃO
+  // ============================================================
+  function advanceQuestion() {
+    questionNumber++;
+    updateHUD();
+
+    if (questionNumber > TOTAL_QUESTIONS) {
+      showEndScreen();
+      return;
+    }
+
+    const nextQ = generateQuestion();
+    currentQuestion = nextQ;
+    statusMsg.textContent = "Preparando próxima parada...";
+    statusIcon.textContent = "🚌";
+    setTimeout(() => runQuestion(nextQ), 500);
+  }
+
+  function showEndScreen() {
+    document.getElementById("finalScore").textContent = score;
+    document.getElementById("finalStats").textContent = `${firstTryCorrect} de ${TOTAL_QUESTIONS} acertos na primeira tentativa.`;
+    document.getElementById("endModal").classList.remove("hidden");
+    SoundManager.play('levelUp');
+  }
+
+  // ============================================================
+  // INICIAR / REINICIAR
+  // ============================================================
+  function startGame() {
+    questionNumber = 0;
+    score = 0;
+    firstTryCorrect = 0;
+    updateHUD();
+    advanceQuestion();
+  }
+
+  document.getElementById("startModalBtn").addEventListener("click", () => {
+    document.getElementById("modalOverlay").classList.add("hidden");
+    startGame();
+  });
+
+  document.getElementById("playAgainBtn").addEventListener("click", () => {
+    document.getElementById("endModal").classList.add("hidden");
+    busContainer.style.transition = "none";
+    busContainer.style.left = "-620px";
+    startGame();
+  });
+
+  muteBtn.addEventListener("click", () => {
+    const next = !SoundManager.isEnabled();
+    SoundManager.setEnabled(next);
+    muteBtn.textContent = next ? "🔊" : "🔇";
+  });
+
+})();
+</script>
 </body>
 </html>
