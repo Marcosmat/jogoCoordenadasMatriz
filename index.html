@@ -9,6 +9,15 @@
 <style>
   * { font-family: 'Fredoka', cursive, system-ui, sans-serif; user-select: none; -webkit-user-select: none; }
 
+  /* Previne rolagem e garante que o jogo ocupe a tela toda (Dynamic Viewport Height) */
+  body {
+    height: 100dvh;
+    width: 100vw;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
   @keyframes busDrivingBounce {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-3px); }
@@ -48,7 +57,7 @@
   .ramp-deployed .bus-ramp { transform: scaleY(1); opacity: 1; }
 
   .pedestrian-actor {
-    position: absolute; font-size: 2.2rem; z-index: 45;
+    position: absolute; font-size: clamp(1.5rem, 6vw, 2.2rem); z-index: 45;
     transition: left 0.05s linear, top 0.05s linear;
     filter: drop-shadow(0 3px 3px rgba(0,0,0,0.25));
     display: flex; flex-direction: column; align-items: center;
@@ -57,21 +66,20 @@
   .foot { width: 6px; height: 4px; background: #334155; border-radius: 999px; }
 
   .mystery-q {
-    position: absolute; font-size: 1.8rem; font-weight: 900;
+    position: absolute; font-size: clamp(1.2rem, 5vw, 1.8rem); font-weight: 900;
     color: #f59e0b; text-shadow: 0 2px 4px rgba(0,0,0,0.35);
     z-index: 50; pointer-events: none;
     opacity: 0; transition: all 0.8s ease-out;
   }
 
   .option-btn {
-    min-height: 4.5rem; padding: 0.75rem 1rem;
-    font-size: 1.75rem; font-weight: 900;
+    min-height: clamp(3rem, 8vh, 4.5rem); padding: 0.5rem;
+    font-size: clamp(1.25rem, 5vw, 2rem); font-weight: 900;
     border: 3px solid #1e293b; border-radius: 0.85rem;
     background: white; box-shadow: 0 4px 0 #1e293b;
     cursor: pointer; transition: transform 0.12s, background-color 0.15s, box-shadow 0.12s;
-    color: #1e293b;
+    color: #1e293b; display: flex; align-items: center; justify-content: center;
   }
-  @media (min-width: 768px) { .option-btn { font-size: 2rem; min-height: 5rem; } }
   .option-btn:hover { background: #fef08a; transform: translateY(-2px); box-shadow: 0 6px 0 #1e293b; }
   .option-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #1e293b; }
   .option-btn.correct { background: #bbf7d0 !important; border-color: #16a34a !important; color: #14532d !important; animation: popCorrect 0.5s ease; }
@@ -86,48 +94,53 @@
   .pulse-q { animation: pulseQuestion 0.8s infinite ease-in-out; }
 </style>
 </head>
-<body class="bg-gradient-to-b from-sky-400 via-sky-200 to-emerald-400 min-h-screen flex flex-col items-center justify-between p-2 md:p-4 overflow-x-hidden text-slate-800">
+<body class="bg-gradient-to-b from-sky-400 via-sky-200 to-emerald-400 items-center justify-between p-1 md:p-4 text-slate-800">
 
-  <header class="w-full max-w-4xl bg-white/95 backdrop-blur border-4 border-slate-800 rounded-2xl p-3 shadow-lg flex flex-wrap items-center justify-between gap-2 z-10">
+  <header class="w-full max-w-4xl bg-white/95 backdrop-blur border-4 border-slate-800 rounded-2xl p-2 md:p-3 shadow-lg flex flex-wrap items-center justify-between gap-2 z-10 shrink-0">
     <div class="flex items-center gap-2">
-      <span class="text-3xl">🚌</span>
+      <span class="text-2xl md:text-3xl">🚌</span>
       <div>
-        <h1 class="text-xl md:text-2xl font-bold leading-none">Busão dos Bichos</h1>
-        <p class="text-xs font-semibold text-slate-500">Terceiro Excluído</p>
+        <h1 class="text-lg md:text-2xl font-bold leading-none">Busão dos Bichos</h1>
+        <p class="text-[10px] md:text-xs font-semibold text-slate-500">Terceiro Excluído</p>
       </div>
     </div>
-    <div class="flex items-center gap-2 md:gap-3 font-bold text-sm md:text-base">
-      <button id="muteBtn" title="Som" class="bg-slate-100 border-2 border-slate-800 rounded-xl px-2 py-1 shadow-[0_2px_0_#1e293b] hover:bg-slate-200">🔊</button>
-      <div class="bg-amber-100 border-2 border-slate-800 rounded-xl px-3 py-1 flex items-center gap-1 shadow-[0_2px_0_#1e293b]">
+    <div class="flex items-center gap-1 md:gap-3 font-bold text-xs md:text-base">
+      <button id="muteBtn" title="Som" class="bg-slate-100 border-2 border-slate-800 rounded-lg md:rounded-xl px-2 py-0.5 shadow-[0_2px_0_#1e293b] hover:bg-slate-200">🔊</button>
+      <div class="bg-amber-100 border-2 border-slate-800 rounded-lg md:rounded-xl px-2 md:px-3 py-1 flex items-center gap-1 shadow-[0_2px_0_#1e293b]">
         <span>⭐</span><span id="scoreVal" class="text-amber-800">0</span>
       </div>
-      <div class="bg-purple-100 border-2 border-slate-800 rounded-xl px-3 py-1 flex items-center gap-1 shadow-[0_2px_0_#1e293b]">
+      <div class="bg-purple-100 border-2 border-slate-800 rounded-lg md:rounded-xl px-2 md:px-3 py-1 flex items-center gap-1 shadow-[0_2px_0_#1e293b]">
         <span>📋</span><span id="questionVal" class="text-purple-800">0/10</span>
       </div>
     </div>
   </header>
 
-  <main id="gameStage" class="w-full max-w-4xl relative h-[300px] md:h-[340px] bg-gradient-to-b from-sky-300 via-sky-100 to-emerald-500 rounded-3xl border-4 border-slate-800 overflow-hidden my-2 shadow-2xl">
-    <div class="absolute top-3 left-8 text-3xl opacity-80">☁️</div>
-    <div class="absolute top-6 right-12 text-4xl opacity-70">☁️</div>
+  <!-- Palco Principal: flex-1 para preencher o meio da tela -->
+  <main id="gameStage" class="w-full max-w-4xl relative flex-1 bg-gradient-to-b from-sky-300 via-sky-100 to-emerald-500 rounded-3xl border-4 border-slate-800 overflow-hidden my-1 md:my-2 shadow-2xl">
+    
+    <div class="absolute top-2 left-4 text-2xl md:text-3xl opacity-80">☁️</div>
+    <div class="absolute top-4 right-8 text-3xl md:text-4xl opacity-70">☁️</div>
 
-    <div class="absolute left-1/2 -translate-x-1/2 bottom-[85px] flex flex-col items-center z-10">
-      <div class="bg-rose-500 border-2 border-white text-white font-extrabold text-[11px] px-2.5 py-0.5 rounded-full shadow-md uppercase tracking-wider flex items-center gap-1">
+    <!-- Ponto de Ônibus -->
+    <div class="absolute left-1/2 -translate-x-1/2 bottom-[30%] flex flex-col items-center z-10">
+      <div class="bg-rose-500 border-2 border-white text-white font-extrabold text-[9px] md:text-[11px] px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider flex items-center gap-1">
         <span>🚏</span> PONTO CENTRAL
       </div>
-      <div class="w-2.5 h-14 bg-slate-400 border border-slate-700 shadow-inner"></div>
-      <div class="w-36 h-3 bg-stone-300 border border-slate-600 rounded-full shadow-md"></div>
+      <div class="w-2 h-10 md:h-14 bg-slate-400 border border-slate-700 shadow-inner"></div>
+      <div class="w-24 md:w-36 h-2 md:h-3 bg-stone-300 border border-slate-600 rounded-full shadow-md"></div>
     </div>
 
-    <div id="busContainer" class="absolute bottom-[28px] -left-[620px] w-[520px] md:w-[580px] h-[115px] md:h-[125px] z-30 transition-all duration-300">
-      <div class="absolute -top-10 left-1/2 -translate-x-1/2 hidden" id="mysteryBadge">
-        <div class="bg-purple-600 text-white font-black px-4 py-1 rounded-xl border-3 border-slate-800 shadow-lg text-xl pulse-q">❓</div>
+    <!-- Ônibus Responsivo -->
+    <div id="busContainer" class="absolute bottom-[15%] w-[92%] max-w-[580px] h-[100px] md:h-[125px] z-30 transition-all duration-300">
+      <div class="absolute -top-8 md:-top-10 left-1/2 -translate-x-1/2 hidden" id="mysteryBadge">
+        <div class="bg-purple-600 text-white font-black px-3 md:px-4 py-1 rounded-xl border-3 border-slate-800 shadow-lg text-lg md:text-xl pulse-q">❓</div>
       </div>
 
-      <div id="busBody" class="relative w-full h-full bg-amber-400 border-4 border-slate-800 rounded-t-3xl rounded-b-xl shadow-[inset_0_-8px_0_#d97706] p-2 flex gap-1.5 items-center">
-        <div class="absolute right-0 bottom-4 w-2 h-6 bg-yellow-200 border-2 border-slate-800 rounded-r-md shadow-[0_0_8px_#fef08a]"></div>
+      <div id="busBody" class="relative w-full h-full bg-amber-400 border-4 border-slate-800 rounded-t-3xl rounded-b-xl shadow-[inset_0_-8px_0_#d97706] p-1.5 md:p-2 flex gap-1 md:gap-1.5 items-center">
+        <div class="absolute right-0 bottom-3 md:bottom-4 w-1.5 md:w-2 h-5 md:h-6 bg-yellow-200 border-2 border-slate-800 rounded-r-md shadow-[0_0_8px_#fef08a]"></div>
 
-        <div id="doorFrame" class="absolute right-14 bottom-0 w-11 h-[88px] bg-slate-900 border-t-2 border-x-2 border-slate-800 rounded-t-lg z-40 overflow-hidden flex shadow-inner">
+        <!-- Porta -->
+        <div id="doorFrame" class="absolute right-[12%] bottom-0 w-[9%] h-[85%] bg-slate-900 border-t-2 border-x-2 border-slate-800 rounded-t-lg z-40 overflow-hidden flex shadow-inner">
           <div class="bus-door-panel-left w-1/2 h-full bg-sky-200 border-r border-slate-800 p-0.5 flex flex-col justify-between">
             <div class="w-full h-1/2 bg-sky-100 border border-slate-400 rounded-sm"></div>
             <div class="w-full h-1/3 bg-slate-300 rounded-sm"></div>
@@ -138,86 +151,93 @@
           </div>
         </div>
 
-        <div id="busRampContainer" class="bus-ramp absolute right-[52px] -bottom-[10px] w-12 h-3 bg-stone-400 border-2 border-slate-800 rounded-b-md z-30 shadow-md">
+        <!-- Rampa -->
+        <div id="busRampContainer" class="bus-ramp absolute right-[10%] -bottom-[8px] w-[12%] h-2.5 md:h-3 bg-stone-400 border-2 border-slate-800 rounded-b-md z-30 shadow-md">
           <div class="w-full h-full bg-yellow-400 border-t border-slate-600"></div>
         </div>
 
-        <div class="w-[430px] md:w-[490px] h-[58px] md:h-[64px] grid grid-cols-10 gap-1 pr-12">
-          <div class="window-seat rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1">1</span><span id="seat0" class="animal-in-seat text-xl md:text-2xl"></span></div>
-          <div class="window-seat rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1">2</span><span id="seat1" class="animal-in-seat text-xl md:text-2xl"></span></div>
-          <div class="window-seat rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1">3</span><span id="seat2" class="animal-in-seat text-xl md:text-2xl"></span></div>
-          <div class="window-seat rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1">4</span><span id="seat3" class="animal-in-seat text-xl md:text-2xl"></span></div>
-          <div class="window-seat rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1">5</span><span id="seat4" class="animal-in-seat text-xl md:text-2xl"></span></div>
-          <div class="window-seat rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1">6</span><span id="seat5" class="animal-in-seat text-xl md:text-2xl"></span></div>
-          <div class="window-seat rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1">7</span><span id="seat6" class="animal-in-seat text-xl md:text-2xl"></span></div>
-          <div class="window-seat rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1">8</span><span id="seat7" class="animal-in-seat text-xl md:text-2xl"></span></div>
-          <div class="window-seat rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1">9</span><span id="seat8" class="animal-in-seat text-xl md:text-2xl"></span></div>
-          <div class="window-seat rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1">10</span><span id="seat9" class="animal-in-seat text-xl md:text-2xl"></span></div>
+        <!-- Janelas (Grid responsivo) -->
+        <div class="w-full h-[55%] md:h-[64px] grid grid-cols-10 gap-0.5 md:gap-1 pr-[24%] pl-1">
+          <div class="window-seat rounded-md md:rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[7px] md:text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1 hidden md:block">1</span><span id="seat0" class="animal-in-seat text-sm md:text-2xl"></span></div>
+          <div class="window-seat rounded-md md:rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[7px] md:text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1 hidden md:block">2</span><span id="seat1" class="animal-in-seat text-sm md:text-2xl"></span></div>
+          <div class="window-seat rounded-md md:rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[7px] md:text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1 hidden md:block">3</span><span id="seat2" class="animal-in-seat text-sm md:text-2xl"></span></div>
+          <div class="window-seat rounded-md md:rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[7px] md:text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1 hidden md:block">4</span><span id="seat3" class="animal-in-seat text-sm md:text-2xl"></span></div>
+          <div class="window-seat rounded-md md:rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[7px] md:text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1 hidden md:block">5</span><span id="seat4" class="animal-in-seat text-sm md:text-2xl"></span></div>
+          <div class="window-seat rounded-md md:rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[7px] md:text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1 hidden md:block">6</span><span id="seat5" class="animal-in-seat text-sm md:text-2xl"></span></div>
+          <div class="window-seat rounded-md md:rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[7px] md:text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1 hidden md:block">7</span><span id="seat6" class="animal-in-seat text-sm md:text-2xl"></span></div>
+          <div class="window-seat rounded-md md:rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[7px] md:text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1 hidden md:block">8</span><span id="seat7" class="animal-in-seat text-sm md:text-2xl"></span></div>
+          <div class="window-seat rounded-md md:rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[7px] md:text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1 hidden md:block">9</span><span id="seat8" class="animal-in-seat text-sm md:text-2xl"></span></div>
+          <div class="window-seat rounded-md md:rounded-lg border-2 border-slate-800 flex items-center justify-center relative overflow-hidden"><span class="text-[7px] md:text-[9px] font-extrabold text-white/40 absolute top-0.5 left-1 hidden md:block">10</span><span id="seat9" class="animal-in-seat text-sm md:text-2xl"></span></div>
         </div>
 
-        <div class="absolute -bottom-4 left-10 w-10 h-10 bg-slate-900 border-4 border-slate-800 rounded-full flex items-center justify-center shadow-lg z-50">
-          <div id="wheel1" class="w-3 h-3 bg-slate-300 rounded-full border border-slate-800"></div>
+        <!-- Rodas -->
+        <div class="absolute -bottom-3 md:-bottom-4 left-[10%] w-8 h-8 md:w-10 md:h-10 bg-slate-900 border-4 border-slate-800 rounded-full flex items-center justify-center shadow-lg z-50">
+          <div id="wheel1" class="w-2 h-2 md:w-3 md:h-3 bg-slate-300 rounded-full border border-slate-800"></div>
         </div>
-        <div class="absolute -bottom-4 right-16 w-10 h-10 bg-slate-900 border-4 border-slate-800 rounded-full flex items-center justify-center shadow-lg z-50">
-          <div id="wheel2" class="w-3 h-3 bg-slate-300 rounded-full border border-slate-800"></div>
+        <div class="absolute -bottom-3 md:-bottom-4 right-[15%] w-8 h-8 md:w-10 md:h-10 bg-slate-900 border-4 border-slate-800 rounded-full flex items-center justify-center shadow-lg z-50">
+          <div id="wheel2" class="w-2 h-2 md:w-3 md:h-3 bg-slate-300 rounded-full border border-slate-800"></div>
         </div>
       </div>
     </div>
 
     <div id="walkStage" class="absolute inset-0 pointer-events-none z-50"></div>
 
-    <div class="absolute bottom-0 left-0 right-0 h-[38px] bg-slate-700 border-t-4 border-slate-800 flex items-center justify-around">
-      <div class="absolute -top-[10px] left-0 right-0 h-[10px] bg-stone-300 border-t-2 border-slate-600"></div>
-      <div class="w-12 h-1.5 bg-amber-400 rounded-full"></div>
-      <div class="w-12 h-1.5 bg-amber-400 rounded-full"></div>
-      <div class="w-12 h-1.5 bg-amber-400 rounded-full"></div>
-      <div class="w-12 h-1.5 bg-amber-400 rounded-full"></div>
-      <div class="w-12 h-1.5 bg-amber-400 rounded-full"></div>
+    <!-- Calçada -->
+    <div class="absolute bottom-0 left-0 right-0 h-[28px] md:h-[38px] bg-slate-700 border-t-4 border-slate-800 flex items-center justify-around">
+      <div class="absolute -top-[8px] md:-top-[10px] left-0 right-0 h-[8px] md:h-[10px] bg-stone-300 border-t-2 border-slate-600"></div>
+      <div class="w-8 md:w-12 h-1 md:h-1.5 bg-amber-400 rounded-full"></div>
+      <div class="w-8 md:w-12 h-1 md:h-1.5 bg-amber-400 rounded-full"></div>
+      <div class="w-8 md:w-12 h-1 md:h-1.5 bg-amber-400 rounded-full"></div>
+      <div class="w-8 md:w-12 h-1 md:h-1.5 bg-amber-400 rounded-full"></div>
+      <div class="w-8 md:w-12 h-1 md:h-1.5 bg-amber-400 rounded-full"></div>
     </div>
   </main>
 
-  <footer class="w-full max-w-4xl bg-white/95 backdrop-blur border-4 border-slate-800 rounded-2xl p-3 shadow-xl flex flex-col gap-2 z-10">
-    <div class="bg-sky-50 border-2 border-sky-300 rounded-xl p-2.5 text-center flex items-center justify-center gap-2 min-h-[48px]">
-      <span id="statusIcon" class="text-2xl animate-bounce">📢</span>
-      <p id="statusMsg" class="font-bold text-sm md:text-base text-slate-800 leading-tight">
+  <!-- Footer (Controles) -->
+  <footer class="w-full max-w-4xl bg-white/95 backdrop-blur border-4 border-slate-800 rounded-2xl p-2 md:p-3 shadow-xl flex flex-col gap-2 z-10 shrink-0">
+    <div class="bg-sky-50 border-2 border-sky-300 rounded-lg md:rounded-xl p-1.5 md:p-2.5 text-center flex items-center justify-center gap-2 min-h-[40px] md:min-h-[48px]">
+      <span id="statusIcon" class="text-xl md:text-2xl animate-bounce">📢</span>
+      <p id="statusMsg" class="font-bold text-xs md:text-base text-slate-800 leading-tight">
         Clique em "Iniciar Jogo" para começar!
       </p>
     </div>
 
-    <div id="optionsArea" class="hidden flex flex-col gap-3">
+    <div id="optionsArea" class="hidden flex flex-col gap-1.5 md:gap-3">
+      <!-- Pergunta Única (Contraste) -->
       <div id="questionPrompt" class="text-center"></div>
-      <div id="optionsGrid" class="grid grid-cols-3 gap-2 md:gap-3"></div>
+      
+      <div id="optionsGrid" class="grid grid-cols-3 gap-1.5 md:gap-3"></div>
     </div>
   </footer>
 
   <!-- Welcome Modal -->
-  <div id="modalOverlay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white border-4 border-slate-800 rounded-3xl p-5 md:p-6 max-w-md w-full text-center shadow-2xl flex flex-col items-center gap-4">
-      <div class="text-5xl animate-bounce">🚌🦁🐼</div>
-      <h2 class="text-2xl font-black">Busão dos Bichos!</h2>
-      <div class="text-sm font-semibold text-slate-600 flex flex-col gap-2 text-left bg-sky-50 p-4 rounded-2xl border-2 border-sky-200">
+  <div id="modalOverlay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white border-4 border-slate-800 rounded-3xl p-4 md:p-6 max-w-md w-full text-center shadow-2xl flex flex-col items-center gap-3 my-auto">
+      <div class="text-4xl md:text-5xl animate-bounce">🚌🦁🐼</div>
+      <h2 class="text-xl md:text-2xl font-black">Busão dos Bichos!</h2>
+      <div class="text-xs md:text-sm font-semibold text-slate-600 flex flex-col gap-2 text-left bg-sky-50 p-3 md:p-4 rounded-2xl border-2 border-sky-200">
         <p>🎯 <strong>10 desafios</strong> de adição e subtração com o busão!</p>
         <p>🔍 Às vezes você vai descobrir <strong>quantos ficaram</strong>, às vezes <strong>quantos havia no início</strong>, às vezes <strong>quantos entraram ou saíram</strong>.</p>
         <p>👀 Preste atenção em cada pista. Escolha a <strong>resposta certa</strong> entre 3 opções!</p>
         <p>💡 Acertos de primeira valem mais pontos!</p>
       </div>
-      <button id="startModalBtn" class="w-full bg-emerald-400 hover:bg-emerald-300 text-slate-900 font-black text-lg py-3 rounded-xl border-3 border-slate-800 shadow-[0_4px_0_#1e293b] active:translate-y-1 active:shadow-none transition-all">
+      <button id="startModalBtn" class="w-full bg-emerald-400 hover:bg-emerald-300 text-slate-900 font-black text-base md:text-lg py-2.5 md:py-3 rounded-xl border-3 border-slate-800 shadow-[0_4px_0_#1e293b] active:translate-y-1 active:shadow-none transition-all">
         Iniciar Jogo 🚀
       </button>
     </div>
   </div>
 
   <!-- End Modal -->
-  <div id="endModal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white border-4 border-slate-800 rounded-3xl p-5 md:p-6 max-w-md w-full text-center shadow-2xl flex flex-col items-center gap-4">
-      <div class="text-6xl">🏆</div>
-      <h2 class="text-2xl font-black">Parabéns! Você completou os 10 desafios!</h2>
-      <div class="bg-amber-100 border-2 border-amber-500 rounded-2xl p-4 w-full">
-        <div class="text-sm font-bold text-amber-700">PONTUAÇÃO FINAL</div>
-        <div class="text-4xl font-black text-amber-900"><span id="finalScore">0</span> ⭐</div>
+  <div id="endModal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white border-4 border-slate-800 rounded-3xl p-4 md:p-6 max-w-md w-full text-center shadow-2xl flex flex-col items-center gap-3 my-auto">
+      <div class="text-5xl md:text-6xl">🏆</div>
+      <h2 class="text-xl md:text-2xl font-black">Você completou os 10 desafios!</h2>
+      <div class="bg-amber-100 border-2 border-amber-500 rounded-2xl p-3 md:p-4 w-full">
+        <div class="text-xs md:text-sm font-bold text-amber-700">PONTUAÇÃO FINAL</div>
+        <div class="text-3xl md:text-4xl font-black text-amber-900"><span id="finalScore">0</span> ⭐</div>
       </div>
-      <div id="finalStats" class="text-sm font-semibold text-slate-600"></div>
-      <button id="playAgainBtn" class="w-full bg-emerald-400 hover:bg-emerald-300 text-slate-900 font-black text-lg py-3 rounded-xl border-3 border-slate-800 shadow-[0_4px_0_#1e293b] active:translate-y-1 active:shadow-none transition-all">
+      <div id="finalStats" class="text-xs md:text-sm font-semibold text-slate-600"></div>
+      <button id="playAgainBtn" class="w-full bg-emerald-400 hover:bg-emerald-300 text-slate-900 font-black text-base md:text-lg py-2.5 md:py-3 rounded-xl border-3 border-slate-800 shadow-[0_4px_0_#1e293b] active:translate-y-1 active:shadow-none transition-all">
         Jogar de Novo 🔄
       </button>
     </div>
@@ -269,7 +289,7 @@
   SoundManager.init();
 
   // ============================================================
-  // CONSTANTES
+  // CONSTANTES E HELPERS
   // ============================================================
   const TOTAL_QUESTIONS = 10;
   const MAX_CAPACITY = 10;
@@ -286,19 +306,17 @@
     return arr;
   };
 
-  // Plano de questões: progressão cognitiva
-  // cenário 1 = final | cenário 2 = inicial | cenário 3 = transformação
   const QUESTION_PLAN = [
-    { scenario: 1, diff: 'easy',   transform: 'single' }, // Q1
-    { scenario: 1, diff: 'easy',   transform: 'single' }, // Q2
-    { scenario: 1, diff: 'easy',   transform: 'single' }, // Q3
-    { scenario: 3, diff: 'easy',   transform: 'single' }, // Q4
-    { scenario: 1, diff: 'medium', transform: 'both'   }, // Q5
-    { scenario: 3, diff: 'medium', transform: 'single' }, // Q6
-    { scenario: 2, diff: 'medium', transform: 'single' }, // Q7
-    { scenario: 2, diff: 'medium', transform: 'both'   }, // Q8
-    { scenario: 'mix', diff: 'hard', transform: 'both' }, // Q9
-    { scenario: 'mix', diff: 'hard', transform: 'both' }  // Q10
+    { scenario: 1, diff: 'easy',   transform: 'single' },
+    { scenario: 1, diff: 'easy',   transform: 'single' },
+    { scenario: 1, diff: 'easy',   transform: 'single' },
+    { scenario: 3, diff: 'easy',   transform: 'single' },
+    { scenario: 1, diff: 'medium', transform: 'both'   },
+    { scenario: 3, diff: 'medium', transform: 'single' },
+    { scenario: 2, diff: 'medium', transform: 'single' },
+    { scenario: 2, diff: 'medium', transform: 'both'   },
+    { scenario: 'mix', diff: 'hard', transform: 'both' },
+    { scenario: 'mix', diff: 'hard', transform: 'both' }
   ];
 
   function getRanges(diff) {
@@ -313,7 +331,6 @@
   let questionNumber = 0;
   let score = 0;
   let firstTryCorrect = 0;
-  let currentQuestion = null;
   let currentOptions = [];
   let optionButtons = [];
   let roundAttempts = 0;
@@ -343,16 +360,13 @@
   const muteBtn = document.getElementById("muteBtn");
 
   // ============================================================
-  // HUD
+  // HUD E UTILITÁRIOS VISUAIS
   // ============================================================
   function updateHUD() {
     scoreVal.textContent = score;
     questionVal.textContent = `${questionNumber}/${TOTAL_QUESTIONS}`;
   }
 
-  // ============================================================
-  // ANIMAÇÕES BÁSICAS
-  // ============================================================
   function setDriving(on) {
     busContainer.classList.toggle("bus-driving", on);
     wheel1.classList.toggle("spinning-wheel", on);
@@ -374,6 +388,17 @@
   function setDoorOpen(v) {
     doorFrame.classList.toggle("door-open", v);
     busRampContainer.classList.toggle("ramp-deployed", v);
+  }
+
+  // Cálculos dinâmicos de posição (corrige o corte lateral)
+  function getCenterLeft() {
+    return (gameStage.clientWidth - busContainer.offsetWidth) / 2;
+  }
+  function getOffscreenLeft() {
+    return -busContainer.offsetWidth - 50;
+  }
+  function getOffscreenRight() {
+    return gameStage.clientWidth + 50;
   }
 
   function moveBus(leftPx, durationMs) {
@@ -623,14 +648,13 @@
     currentPassengers = Array(q.initial).fill(null).map(() => getRandomAnimal());
     renderSeats();
 
+    // Posiciona o ônibus fora da tela usando a largura real calculada
     busContainer.style.transition = "none";
-    busContainer.style.left = "-620px";
-
-    const centerLeft = (gameStage.clientWidth / 2) - 260;
+    busContainer.style.left = `${getOffscreenLeft()}px`;
 
     if (q.scenario === 2) {
       statusIcon.textContent = "🚌";
-      statusMsg.textContent = "O busão chegou... mas não sabemos quantos animais estão dentro!";
+      statusMsg.textContent = "O busão chegou... mas não sabemos quantos estão dentro!";
       SoundManager.play('busArriving');
 
       await moveBus(15, 1200);
@@ -638,7 +662,7 @@
 
       statusIcon.textContent = "🏣";
       statusMsg.textContent = "Indo para o Ponto Central...";
-      await moveBus(centerLeft, 1400);
+      await moveBus(getCenterLeft(), 1400);
       SoundManager.play('busAtDestination');
 
       setDoorOpen(true);
@@ -673,8 +697,8 @@
       renderSeats(false);
       setWindowsRevealed(false);
       statusIcon.textContent = "🏣";
-      statusMsg.textContent = `Havia ${q.initial} animais no início. Indo para o Ponto Central...`;
-      await moveBus(centerLeft, 1400);
+      statusMsg.textContent = `Havia ${q.initial} animais no início. Indo...`;
+      await moveBus(getCenterLeft(), 1400);
       SoundManager.play('busAtDestination');
 
       setDoorOpen(true);
@@ -704,9 +728,11 @@
   async function performTransformations(q) {
     const busRect = busContainer.getBoundingClientRect();
     const stageRect = gameStage.getBoundingClientRect();
-    const doorX = (busRect.left - stageRect.left) + (busRect.width * 0.81);
-    const busFloorY = (busRect.top - stageRect.top) + (busRect.height * 0.38);
-    const sidewalkY = (busRect.top - stageRect.top) + (busRect.height * 0.72);
+    
+    // Cálculos dinâmicos da porta baseados em porcentagens da tela
+    const doorX = (busRect.left - stageRect.left) + (busRect.width * 0.82);
+    const busFloorY = (busRect.top - stageRect.top) + (busRect.height * 0.35);
+    const sidewalkY = (busRect.top - stageRect.top) + (busRect.height * 0.75);
 
     if (q.leave > 0) {
       statusIcon.textContent = "🚶";
@@ -752,13 +778,13 @@
   async function performMysteryTransformation(q) {
     const busRect = busContainer.getBoundingClientRect();
     const stageRect = gameStage.getBoundingClientRect();
-    const doorX = (busRect.left - stageRect.left) + (busRect.width * 0.81);
+    const doorX = (busRect.left - stageRect.left) + (busRect.width * 0.82);
     const doorY = (busRect.top - stageRect.top) + (busRect.height * 0.5);
 
     const direction = q.ask === 'leave' ? 'out' : 'in';
 
     statusIcon.textContent = "❓";
-    statusMsg.textContent = "Animais misteriosos passando pela porta! Não dá para contar quantos...";
+    statusMsg.textContent = "Animais misteriosos passando! Não dá para contar...";
     mysteryBadge.classList.remove("hidden");
 
     for (let i = 0; i < 6; i++) {
@@ -814,12 +840,11 @@
       optionButtons.push(btn);
     });
 
-    // Pergunta em destaque com alto contraste (apenas uma vez)
-    questionPrompt.innerHTML = `<span class="inline-block bg-indigo-600 text-white font-black text-base md:text-lg px-6 py-2.5 rounded-xl border-3 border-slate-800 shadow-[0_3px_0_#1e293b]">${getPrompt(q)}</span>`;
+    // Pergunta única e com alto contraste
+    questionPrompt.innerHTML = `<span class="inline-block bg-indigo-600 text-white font-black text-xs md:text-lg px-4 md:px-6 py-1.5 md:py-2.5 rounded-lg md:rounded-xl border-2 md:border-3 border-slate-800 shadow-[0_2px_0_#1e293b]">${getPrompt(q)}</span>`;
     
-    // Banner superior focado apenas em instrução/ação
     statusIcon.textContent = "🎯";
-    statusMsg.textContent = "Hora de responder! Escolha uma das opções abaixo.";
+    statusMsg.textContent = "Hora de responder! Escolha abaixo.";
     
     optionsArea.classList.remove("hidden");
     optionsArea.classList.remove("options-appear");
@@ -857,8 +882,7 @@
       setTimeout(() => {
         statusIcon.textContent = "🚀";
         statusMsg.textContent = "Próxima parada!";
-        const sw = gameStage.clientWidth;
-        moveBus(sw + 120, 1400).then(() => advanceQuestion());
+        moveBus(getOffscreenRight(), 1400).then(() => advanceQuestion());
       }, 2400);
 
     } else {
@@ -881,12 +905,11 @@
             score += points;
             updateHUD();
             statusIcon.textContent = "💡";
-            statusMsg.textContent = `A resposta certa era ${currentOptions[correctIdx].val}. ${currentOptions[correctIdx].hint}`;
+            statusMsg.textContent = `A resposta era ${currentOptions[correctIdx].val}. ${currentOptions[correctIdx].hint}`;
             setWindowsRevealed(true);
             renderSeats(true);
             setTimeout(() => {
-              const sw = gameStage.clientWidth;
-              moveBus(sw + 120, 1400).then(() => advanceQuestion());
+              moveBus(getOffscreenRight(), 1400).then(() => advanceQuestion());
             }, 3200);
           }, 900);
         }
@@ -895,7 +918,7 @@
   }
 
   // ============================================================
-  // AVANÇO DE QUESTÃO
+  // AVANÇO DE QUESTÃO E FIM
   // ============================================================
   function advanceQuestion() {
     questionNumber++;
@@ -907,8 +930,7 @@
     }
 
     const nextQ = generateQuestion();
-    currentQuestion = nextQ;
-    statusMsg.textContent = "Preparando próxima parada...";
+    statusMsg.textContent = "Preparando...";
     statusIcon.textContent = "🚌";
     setTimeout(() => runQuestion(nextQ), 500);
   }
@@ -939,7 +961,7 @@
   document.getElementById("playAgainBtn").addEventListener("click", () => {
     document.getElementById("endModal").classList.add("hidden");
     busContainer.style.transition = "none";
-    busContainer.style.left = "-620px";
+    busContainer.style.left = `${getOffscreenLeft()}px`;
     startGame();
   });
 
